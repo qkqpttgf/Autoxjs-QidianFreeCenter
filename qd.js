@@ -14,7 +14,7 @@ var t_click_x = 0, t_click_y = 0; // 用于存储扫描点击成功的坐标，�
 
 console.show();
 auto.waitFor();
-console.setTitle("起点自动20251001");
+console.setTitle("起点自动20251002");
 setScreenMetrics(1080, 2310);
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]];
 console.setPosition(c_pos[0][0], c_pos[0][1]); // 控制台放上半，方便对比closeButtonBottom高度
@@ -60,6 +60,21 @@ function wherePage() {
         return "browser";
     }
     return "";
+}
+function scrollShowButton(btn_top) {
+    let scroll1 = btn_top - scrolled - device.height / 2;
+    if (scroll1 > device.height / 4) {
+        let h4 = device.height / 4;
+        let scroll2 = scroll1;
+        for (let i = 0; i < Math.floor(scroll1 / h4); i++) {
+            swipe(device.width - 50, device.height * 7 / 8, device.width - 60, device.height * 7 / 8 - h4, 500);
+            sleep(200);
+            scroll2 -= h4;
+        }
+        swipe(device.width - 50, device.height * 7 / 8, device.width - 60, device.height * 7 / 8 - scroll2, 500);
+        sleep(800);
+        scrolled += scroll1;
+    }
 }
 function openQidian() {
     launch("com.qidian.QDReader");
@@ -464,13 +479,14 @@ function game_play(min) {
     thread.interrupt();
     if (wherePage() == "gamecenter") {
         log("成功打开游戏中心");
-        swipe(device.width - 50, device.height / 2, device.width - 55, device.height / 3, 500);
-        sleep(2000);
+        sleep(1000);
         if (text("在线玩").find().length < 2) {
             console.warn("未识别到“在线玩”");
             return 1;
         }
-        text("在线玩").findOnce(0).click();
+        let play_btn = text("在线玩").findOnce(0);
+        scrollShowButton(play_btn.bounds().top);
+        play_btn.click();
         log("在线玩");
     }
     if (wherePage() == "browser") log("似乎直接打开游戏了");
@@ -543,11 +559,7 @@ do {
             if (Math.abs(aa[ii].bounds().top - exppos[i]) < 200) f = true;
         }
         if (!f) {
-            let scroll1 = aa[ii].bounds().top - device.height / 2;
-            if (scroll1 - scrolled > device.height / 4) {
-                swipe(device.width - 50, device.height * 7 / 8, device.width - 60, device.height * 7 / 8 - scroll1 + scrolled, 500);
-                scrolled = scroll1;
-            }
+            scrollShowButton(aa[ii].bounds().top);
             aa[ii].click();
             break;
         }
@@ -582,7 +594,6 @@ console.verbose(longdash);
 // 玩游戏
 if (textContains("再玩").exists()) {
     log("开始玩游戏");
-    swipe(device.width - 50, device.height * 7 / 8, device.width - 60, device.height / 4, 1200);
 
     let num = 0;
     do {
@@ -604,7 +615,7 @@ if (textContains("再玩").exists()) {
             }
         }
         if (b != null) {
-            //if (b.bounds().top - playLabel.bounds().top<500)
+            scrollShowButton(b.bounds().top);
             b.click();
             sleep(5000);
             let res = game_play(min);
@@ -627,6 +638,7 @@ bonusButtonTexts.forEach(btnt => {
     if (text(btnt).exists()) {
         let btn = text(btnt).find();
         for (let i = 0; i < btn.length; i++) {
+            scrollShowButton(btn[i].bounds().top);
             btn[i].click();
             sleep(2000);
             if (textContains("知道了").exists()) {
