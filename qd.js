@@ -25,7 +25,7 @@ if (auto.service == null) {
 }
 console.info("无障碍服务已开启");
 var longdash = "———————";
-var scrolled = 0;
+var freeCenterScrolled = 0;
 //log("开启静音");
 //device.setMusicVolume(0);
 if (!requestScreenCapture()) {
@@ -61,7 +61,7 @@ function wherePage() {
     }
     return "";
 }
-function scrollShowButton(btn_top) {
+function scrollShowButton(scrolled, btn_top) {
     let scroll1 = btn_top - scrolled - device.height / 2;
     if (scroll1 > device.height / 4) {
         let h4 = device.height / 4;
@@ -73,8 +73,9 @@ function scrollShowButton(btn_top) {
         }
         swipe(device.width - 50, device.height * 7 / 8, device.width - 60, device.height * 7 / 8 - scroll2, 500);
         sleep(800);
-        scrolled += scroll1;
+        return scrolled + scroll1;
     }
+    return scrolled;
 }
 function openQidian() {
     launch("com.qidian.QDReader");
@@ -478,18 +479,18 @@ function game_play(min) {
     } while (wherePage() != "gamecenter" && wherePage() != "browser");
     thread.interrupt();
     if (wherePage() == "gamecenter") {
-        log("成功打开游戏中心");
+        console.info("成功打开游戏中心");
         sleep(1000);
         if (text("在线玩").find().length < 2) {
             console.warn("未识别到“在线玩”");
             return 1;
         }
         let play_btn = text("在线玩").findOnce(0);
-        scrollShowButton(play_btn.bounds().top);
+        scrollShowButton(0, play_btn.bounds().top);
         play_btn.click();
         log("在线玩");
     }
-    if (wherePage() == "browser") log("似乎直接打开游戏了");
+    if (wherePage() == "browser") console.warn("似乎直接打开游戏了");
     sleep(2000);
 
     do {
@@ -559,7 +560,7 @@ do {
             if (Math.abs(aa[ii].bounds().top - exppos[i]) < 200) f = true;
         }
         if (!f) {
-            scrollShowButton(aa[ii].bounds().top);
+            freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii].bounds().top);
             aa[ii].click();
             break;
         }
@@ -615,7 +616,7 @@ if (textContains("再玩").exists()) {
             }
         }
         if (b != null) {
-            scrollShowButton(b.bounds().top);
+            freeCenterScrolled = scrollShowButton(freeCenterScrolled, b.bounds().top);
             b.click();
             sleep(5000);
             let res = game_play(min);
@@ -638,7 +639,7 @@ bonusButtonTexts.forEach(btnt => {
     if (text(btnt).exists()) {
         let btn = text(btnt).find();
         for (let i = 0; i < btn.length; i++) {
-            scrollShowButton(btn[i].bounds().top);
+            freeCenterScrolled = scrollShowButton(freeCenterScrolled, btn[i].bounds().top);
             btn[i].click();
             sleep(2000);
             if (textContains("知道了").exists()) {
