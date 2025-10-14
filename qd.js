@@ -10,12 +10,12 @@ var t_click_x_left = 100;   // 循环扫描点击区域的左边框，到屏幕�
 var t_click_x_right = 20;   // 循环扫描点击区域的右边框，到屏幕右边的距离
 var t_click_y_top = 30;     // 循环扫描点击区域的上边框，在closeButtonBottom上方这么多
 var t_click_y_bottom = 20;  // 循环扫描点击区域的下边框，在closeButtonBottom下方这么多
-var t_click_x = 0, t_click_y = 0; // 用于存储扫描点击成功的坐标，不要改
+var t_click = new Object(); // 用于存储扫描点击成功的坐标
 
 console.show();
 auto.waitFor();
-console.setTitle("起点自动20251002");
-setScreenMetrics(1080, 2310);
+console.setTitle("起点自动20251013");
+//setScreenMetrics(1080, 2310);
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]];
 console.setPosition(c_pos[0][0], c_pos[0][1]); // 控制台放上半，方便对比closeButtonBottom高度
 console.setSize(device.width / 2, device.width / 2);
@@ -37,16 +37,20 @@ if (!requestScreenCapture()) {
 }
 
 function wherePage() {
-    /*if (currentPackage() != "com.qidian.QDReader") {
+    /* 用current判断就会出事
+    if (currentPackage() != "com.qidian.QDReader") {
         // 不在起点APP
         console.verbose(currentPackage());
         return "isNotQidain";
+    }
+    if (currentActivity() == "com.qidian.QDReader.ui.activity.MainGroupActivity") {
+        return "index";
     }*/
     if (text("书架").exists() && text("精选").exists() && text("发现").exists() && text("我").exists()) {
         // 首页或精选或我
         return "index";
     }
-    //if (className("android.view.View").text("每日视频福利").exists() || text("激励视频任务").exists())
+    // com.qidian.QDReader.ui.activity.QDBrowserActivity 可能是福利中心也可能是游戏中心
     if (text("完成任务得奖励").exists() || text("激励任务").exists()) {
         // 福利中心
         return "freecenter"
@@ -62,8 +66,8 @@ function wherePage() {
     return "";
 }
 function scrollShowButton(scrolled, btn_top) {
-    let scroll1 = btn_top - scrolled - device.height / 2;
-    if (scroll1 > device.height / 4) {
+    let scroll1 = btn_top - scrolled - device.height * 3 / 4;
+    if (scroll1 > device.height / 8) {
         let h4 = device.height / 4;
         let scroll2 = scroll1;
         for (let i = 0; i < Math.floor(scroll1 / h4); i++) {
@@ -97,7 +101,11 @@ function openQidian() {
     let n = 0;
     do {
         n++;
-        console.verbose("缓冲……");
+        if (currentActivity() == "com.qidian.QDReader.ui.activity.SplashADActivity") {
+            console.verbose("开屏广告");
+        } else {
+            console.verbose("缓冲……");
+        }
         sleep(1000);
         t();
         if (n > 15 && currentPackage() != "com.qidian.QDReader") break;
@@ -123,13 +131,16 @@ function enterFreeCenter() {
     sleep(1100);
 
     if (text("签到").exists()) {
-        log("有“签到”按钮");
         click("签到", 0);
+        console.info("签到");
         sleep(2000);
     }
     if (text("领福利").exists()) {
         log("有“领福利”按钮");
         click("领福利", 0);
+    } else if (wherePage() == "freecenter") {
+        // 周日兑换直接打开
+        sleep(500);
     } else {
         //log(className("android.widget.FrameLayout").find().length);
         let uc = id("viewPager").className("androidx.viewpager.widget.ViewPager").scrollable(true).findOne(1000);
@@ -178,7 +189,7 @@ function enterFreeCenter() {
 }
 function video_look() {
     console.verbose(longdash);
-    log("看视频");
+    log("看广告");
     if (textContains("播放将消耗流量").exists()) {
         click("继续播放", 0);
     }
@@ -188,30 +199,50 @@ function video_look() {
     do {
         console.verbose("缓冲……");
         sleep(1000);
+        if (textContains("验证").exists()) {
+            let c1 = 0;
+            while (textContains("验证").exists()) {
+                c1++;
+                console.setPosition(c_pos[c1 % 2][0], c_pos[c1 % 2][1]);
+                toastLog("请手动过一下验证");
+                sleep(3000);
+            }
+            if (c1 > 0) console.setPosition(c_pos[0][0], c_pos[0][1]);
+        }
         m++;
-        if (m > 5) {
-            console.verbose("尝试截图OCR");
-            let capimg = captureScreen();
-            //capimg = images.clip(capimg, 0, 0, device.width, closeButtonBottom);
-            let res = paddle.ocr(capimg);
-            for (let i = 0; i < res.length; i++) {
-                if (res[i].text.indexOf("可获得奖励") > -1) {
-                    //log(i, res[i].text);
-                    let sec = res[i].text.replace(/[^\d]/g, "");
-                    if (res[i].text.indexOf("点击广告") > -1) {
-                        console.log("要点击：", sec);
-                        ad_clicknewpage = sec * 1;
-                        break;
-                    } else if (res[i].text.indexOf("浏览") > -1) {
-                        console.log("在浏览：", sec);
-                        ad_raw = sec * 1;
-                        break;
-                    }
+        //if (m > 3) {
+        //    console.verbose("尝试截图OCR");
+        let capimg = captureScreen();
+        //capimg = images.clip(capimg, 0, 0, device.width, closeButtonBottom);
+        let res = paddle.ocr(capimg);
+        for (let i = 0; i < res.length; i++) {
+            if (res[i].text.indexOf("可获得奖励") > -1) {
+                //log(i, res[i].text);
+                let sec = res[i].text.replace(/[^\d]/g, "");
+                if (res[i].text.indexOf("点击广告") > -1) {
+                    console.log("点击：", sec);
+                    ad_clicknewpage = sec * 1;
+                    break;
+                } else if (res[i].text.indexOf("浏览") > -1) {
+                    console.log("浏览：", sec);
+                    ad_raw = sec * 1;
+                    break;
+                } else if (res[i].text.indexOf("观看") > -1) {
+                    // 冰雪游戏广告
+                    console.log("观看：", sec);
+                    ad_raw = sec * 1;
+                    break;
                 }
             }
-            if (ad_raw > -1) break;
-            if (ad_clicknewpage > -1) break;
+            if (res[i].text.indexOf("已经获得奖励") > -1 || res[i].text.indexOf("已获得奖励") > -1) {
+                console.log("已获得");
+                ad_raw = 1;
+                break;
+            }
         }
+        if (ad_raw > -1) break;
+        if (ad_clicknewpage > -1) break;
+        //}
         if (m > 15) {
             console.warn("似乎哪里不对");
             break;
@@ -244,27 +275,23 @@ function video_look() {
                     break;
                 }
             }
+            if (sec1 > -1) sec = sec1;
+            else sec = 0;
+
             for (let i = 0; i < res.length; i++) {
                 if (res[i].text.indexOf("点击") > -1) {
                     // 要点击广告的，额外点击一下
-                    //log(res[i]);
                     let b = res[i].bounds;
                     click(parseInt((b.left + b.right) / 2), parseInt((b.top + b.bottom) / 2));
                 }
             }
-            if (sec1 > -1) sec = sec1;
-            else {
-                sec = 0;
-                console.log("应该已获得奖励");
-            }
-
             if (sec > 0) {
                 let m1 = 0;
-                do {
+                while (m1 < sec + 1) {
                     sleep(1000);
                     m1++;
                     //console.verbose("等待", m1);
-                } while (m1 < sec + 1);
+                }
                 console.log("已看" + sec + "秒");
             }
 
@@ -277,9 +304,11 @@ function video_look() {
             }
             sleep(1000);
         } while (sec > 0);
+        console.log("应该已获得奖励");
 
         // 看完点X
         let n = 0;
+        let try_back_time = 2;
         let xr = device.width - t_click_x_right, yt = closeButtonBottom - t_click_y_top;
         let xc = xr, yc = yt;
         do {
@@ -301,12 +330,16 @@ function video_look() {
                   btns[0]
               );*/
 
-            if (n < 3) {
+            if (n < try_back_time + 1) {
                 console.verbose("尝试模拟“手势返回”");
                 back();
             } else {
-                if (n > 5 || !t_click_x) {
-                    t_click_x = 0;
+                let n1 = n - try_back_time - 1;
+                if (n1 < Object.keys(t_click).length) {
+                    let tmp = t_click[Object.keys(t_click)[n1]];
+                    console.verbose("点右上角", tmp.x, tmp.y);
+                    click(tmp.x, tmp.y);
+                } else {
                     console.verbose("扫描点击", xc, yc);
                     click(xc, yc);
                     yc += t_click_step;
@@ -319,22 +352,21 @@ function video_look() {
                         console.warn("请编辑代码前几行，扩大循环点击扫描的范围，试出点击坐标后，再缩小范围。");
                         exit();
                     }
-                } else {
-                    console.verbose("点右上角", t_click_x, t_click_y);
-                    click(t_click_x, t_click_y);
                 }
             }
             sleep(1000);
         } while (wherePage() != "freecenter");
 
-        if (!t_click_x) if (!(xc == xr && yc == yt)) {
+        if (!(xc == xr && yc == yt)) {
             yc -= t_click_step;
             if (yc < yt) {
                 yc = closeButtonBottom + t_click_y_bottom;
                 xc += t_click_step;
             }
-            t_click_x = xc;
-            t_click_y = yc;
+            let tmp = new Object();
+            tmp.x = xc;
+            tmp.y = yc;
+            t_click["" + xc + "," + yc] = tmp;
         }
     } else {
         // 旧广告，用旧方法
@@ -452,7 +484,7 @@ function video_look() {
             sleep(1000);
         } while (wherePage() != "freecenter");
     }
-    log("已退出视频");
+    log("已退出广告");
     if (textContains("知道了").exists()) {
         click("知道了", 0);
     }
@@ -532,62 +564,55 @@ sleep(3000);
 
 // 签到 领东西等略过，请手动操作
 
-// 开始视频任务
-log("开始视频任务");
+// 开始看广告
+log("开始看广告");
 do {
-    //text("去完成").findOne(500).click();
-    let targets = ["看视频", "去完成"]; // 目标按钮字符
-    let target = "";
-    for (let i = 0; i < targets.length; i++) {
-        if (text(targets[i]).exists()) target = targets[i];
-    }
-    if (target == "") break;
-    console.verbose("有", target);
-
     let expstring = ["再玩", "更新提醒", "推送通知", "充值"]; // 目标按钮左边如果有这些字，跳过
     let exppos = new Array();
     expstring.forEach(e => {
         let z = textContains(e).find();
-        for (let i = 0; i < z.length; i++) {
-            exppos.push(z[i].bounds().top);
+        for (let ii = 0; ii < z.length; ii++) {
+            exppos.push(z[ii].bounds().top);
         }
     });
-    let aa = text(target).find();
-    let ff = false;
-    for (let ii = 0; ii < aa.length; ii++) {
-        let f = false;
-        for (let i = 0; i < exppos.length; i++) {
-            if (Math.abs(aa[ii].bounds().top - exppos[i]) < 200) f = true;
-        }
-        if (!f) {
-            freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii].bounds().top);
-            aa[ii].click();
-            break;
-        }
-        if (ii == aa.length - 1) ff = true;
-    }
-    if (ff) break;
-    sleep(3000);
+    //text("去完成").findOne(500).click();
+    let targets = ["看视频", "去完成"]; // 目标按钮字符
+    let targetNum = 0, targetFalse = 0;
+    for (let i = 0; i < targets.length; i++) {
+        if (text(targets[i]).exists()) {
+            let target = targets[i];
+            let aa = text(target).find();
+            targetNum += aa.length;
+            for (let ii = 0; ii < aa.length; ii++) {
+                let f = false;
+                for (let j = 0; j < exppos.length; j++) {
+                    if (Math.abs(aa[ii].bounds().top - exppos[j]) < 200) f = true;
+                }
+                if (f) {
+                    targetFalse++;
+                } else {
+                    console.verbose(target);
+                    freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii].bounds().top);
+                    aa[ii].click();
+                    sleep(3000);
+                    if (text("可从这里回到福利页哦").exists()) {
+                        click("我知道了", 0);
+                    }
+                    video_look();
+                    sleep(3000);
+                    if (text("我知道了").exists()) {
+                        click("我知道了", 0);
+                        sleep(3000);
+                    }
 
-    if (text("可从这里回到福利页哦").exists()) {
-        click("我知道了", 0);
+                }
+            }
+        }
     }
-    let c1 = 0;
-    while (textContains("验证").exists()) {
-        c1++;
-        console.setPosition(c_pos[c1 % 2][0], c_pos[c1 % 2][1]);
-        toastLog("请手动过一下验证");
-        sleep(3000);
-    }
-    if (c1 > 0) console.setPosition(c_pos[0][0], c_pos[0][1]);
-    video_look();
-    sleep(3000);
-    if (text("我知道了").exists()) {
-        click("我知道了", 0);
-        sleep(3000);
-    }
+    if (targetFalse == targetNum) break;
+
 } while (text("看视频").exists() || text("去完成").exists());
-log("视频任务结束");
+console.info("看广告结束");
 console.verbose(longdash);
 
 // 其它脚本里的听书等活动，快一年了还没有，先删
@@ -609,10 +634,10 @@ if (textContains("再玩").exists()) {
         let b = null;
         let zzz = playLabel.bounds().top;
         for (let i = 0; i < textContains("去完成").find().length; i++) {
-            let aaa = textContains("去完成").findOnce(i).bounds().centerY();
-            //log(zzz, aaa);
-            if (Math.abs(aaa - zzz) < 100) {
-                b = textContains("去完成").findOnce(i);
+            let a = textContains("去完成").findOnce(i);
+            freeCenterScrolled = scrollShowButton(freeCenterScrolled, a.bounds().top);
+            if (a.bounds().top < zzz && a.bounds().bottom > zzz) {
+                b = a;
             }
         }
         if (b != null) {
@@ -630,8 +655,7 @@ if (textContains("再玩").exists()) {
         }
         num++;
     } while (textContains("再玩").exists());
-    log("结束玩游戏");
-
+    console.info("结束玩游戏");
     console.verbose(longdash);
 }
 let bonusButtonTexts = ["领奖励", "领积分"];
