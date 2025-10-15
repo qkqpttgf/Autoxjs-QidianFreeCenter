@@ -14,7 +14,7 @@ var t_click = new Object(); // 用于存储扫描点击成功的坐标
 
 console.show();
 auto.waitFor();
-console.setTitle("起点自动20251013");
+console.setTitle("起点自动20251015");
 //setScreenMetrics(1080, 2310);
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]];
 console.setPosition(c_pos[0][0], c_pos[0][1]); // 控制台放上半，方便对比closeButtonBottom高度
@@ -121,14 +121,14 @@ function openQidian() {
         console.error("似乎未识别到起点首页，请手动关闭首页悬浮广告，或清理进程重新来一遍");
         exit();
     }
+    swipe(device.width - 50, device.height / 2, device.width - 60, device.height / 2 + 200, 900);
+
     console.info("起点已启动成功");
     console.verbose(longdash);
 }
 function enterFreeCenter() {
     if (wherePage() != "index") openQidian();
-
-    swipe(device.width - 50, device.height / 2, device.width - 60, device.height / 2 + 100, 500);
-    sleep(1100);
+    sleep(1000);
 
     if (text("签到").exists()) {
         click("签到", 0);
@@ -168,16 +168,16 @@ function enterFreeCenter() {
         click("福利中心", 0);
     }
     let m = 0;
-    do {
+    while (m < 15 && wherePage() != "freecenter") {
         console.verbose("缓冲中……");
         sleep(1000);
         m++;
-    } while (m < 15 && wherePage() != "freecenter");
+    }
 
     swipe(device.width - 50, device.height / 2, device.width - 90, device.height / 4, 500);
     sleep(500);
     swipe(device.width - 100, device.height / 4, device.width - 50, device.height / 2, 500);
-    sleep(1000);
+    sleep(600);
 
     if (wherePage() != "freecenter") {
         console.warn(wherePage(), currentPackage(), currentActivity());
@@ -210,39 +210,39 @@ function video_look() {
             if (c1 > 0) console.setPosition(c_pos[0][0], c_pos[0][1]);
         }
         m++;
-        //if (m > 3) {
-        //    console.verbose("尝试截图OCR");
-        let capimg = captureScreen();
-        //capimg = images.clip(capimg, 0, 0, device.width, closeButtonBottom);
-        let res = paddle.ocr(capimg);
-        for (let i = 0; i < res.length; i++) {
-            if (res[i].text.indexOf("可获得奖励") > -1) {
-                //log(i, res[i].text);
-                let sec = res[i].text.replace(/[^\d]/g, "");
-                if (res[i].text.indexOf("点击广告") > -1) {
-                    console.log("点击：", sec);
-                    ad_clicknewpage = sec * 1;
-                    break;
-                } else if (res[i].text.indexOf("浏览") > -1) {
-                    console.log("浏览：", sec);
-                    ad_raw = sec * 1;
-                    break;
-                } else if (res[i].text.indexOf("观看") > -1) {
-                    // 冰雪游戏广告
-                    console.log("观看：", sec);
-                    ad_raw = sec * 1;
+        if (m > 2) {
+            //    console.verbose("尝试截图OCR");
+            let capimg = captureScreen();
+            //capimg = images.clip(capimg, 0, 0, device.width, closeButtonBottom);
+            let res = paddle.ocr(capimg);
+            for (let i = 0; i < res.length; i++) {
+                if (res[i].text.indexOf("可获得奖励") > -1) {
+                    //log(i, res[i].text);
+                    let sec = res[i].text.replace(/[^\d]/g, "");
+                    if (res[i].text.indexOf("点击广告") > -1) {
+                        console.log("点击：", sec);
+                        ad_clicknewpage = sec * 1;
+                        break;
+                    } else if (res[i].text.indexOf("浏览") > -1) {
+                        console.log("浏览：", sec);
+                        ad_raw = sec * 1;
+                        break;
+                    } else if (res[i].text.indexOf("观看") > -1) {
+                        // 冰雪游戏广告
+                        console.log("观看：", sec);
+                        ad_raw = sec * 1;
+                        break;
+                    }
+                }
+                if (res[i].text.indexOf("已经获得奖励") > -1 || res[i].text.indexOf("已获得奖励") > -1) {
+                    console.log("已获得");
+                    ad_raw = 1;
                     break;
                 }
             }
-            if (res[i].text.indexOf("已经获得奖励") > -1 || res[i].text.indexOf("已获得奖励") > -1) {
-                console.log("已获得");
-                ad_raw = 1;
-                break;
-            }
+            if (ad_raw > -1) break;
+            if (ad_clicknewpage > -1) break;
         }
-        if (ad_raw > -1) break;
-        if (ad_clicknewpage > -1) break;
-        //}
         if (m > 15) {
             console.warn("似乎哪里不对");
             break;
@@ -629,19 +629,19 @@ if (textContains("再玩").exists()) {
         }
         sleep(1000);
         let playLabel = textContains("再玩").findOne(500);
+        freeCenterScrolled = scrollShowButton(freeCenterScrolled, playLabel.bounds().top);
+        playLabel = textContains("再玩").findOne(500); // 需要重新获取，bounds才会更新
         log(playLabel.text());
+        let zzz = playLabel.bounds().top;
         let min = playLabel.text().replace(/[^\d]/g, "");
         let b = null;
-        let zzz = playLabel.bounds().top;
         for (let i = 0; i < textContains("去完成").find().length; i++) {
             let a = textContains("去完成").findOnce(i);
-            freeCenterScrolled = scrollShowButton(freeCenterScrolled, a.bounds().top);
             if (a.bounds().top < zzz && a.bounds().bottom > zzz) {
                 b = a;
             }
         }
         if (b != null) {
-            freeCenterScrolled = scrollShowButton(freeCenterScrolled, b.bounds().top);
             b.click();
             sleep(5000);
             let res = game_play(min);
