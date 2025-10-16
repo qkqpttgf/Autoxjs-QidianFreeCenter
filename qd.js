@@ -495,7 +495,7 @@ function game_play(min) {
     swipe(device.width - 50, device.height / 3, device.width - 55, device.height / 2, 900);
     let num = 0;
     let thread = threads.start(
-        function time() {
+        function timer1() {
             //计时
             do {
                 sleep(1000);
@@ -549,6 +549,17 @@ function game_play(min) {
     } while (wherePage() == "");
     return 0;
 }
+function textButtonExist(str) {
+    if (Array.isArray(str)) {
+        for (let i = 0; i < str.length; i++) {
+            if (text(str[i]).exists()) return true;
+        }
+    }
+    if (typeof str === 'string') {
+        if (text(str).exists()) return true;
+    }
+    return false;
+}
 
 // 正式开始------------------------------------------------------------------
 home();
@@ -566,8 +577,9 @@ sleep(3000);
 
 // 开始看广告
 log("开始看广告");
+let targets = ["看视频", "去完成"]; // 目标按钮字符
+let expstring = ["再玩", "更新提醒", "推送通知", "充值"]; // 目标按钮左边如果有这些字，跳过
 do {
-    let expstring = ["再玩", "更新提醒", "推送通知", "充值"]; // 目标按钮左边如果有这些字，跳过
     let exppos = new Array();
     expstring.forEach(e => {
         let z = textContains(e).find();
@@ -575,12 +587,10 @@ do {
             exppos.push(z[ii].bounds().top);
         }
     });
-    //text("去完成").findOne(500).click();
-    let targets = ["看视频", "去完成"]; // 目标按钮字符
     let targetNum = 0, targetFalse = 0;
     for (let i = 0; i < targets.length; i++) {
-        if (text(targets[i]).exists()) {
-            let target = targets[i];
+        let target = targets[i];
+        if (text(target).exists()) {
             let aa = text(target).find();
             targetNum += aa.length;
             for (let ii = 0; ii < aa.length; ii++) {
@@ -611,7 +621,7 @@ do {
     }
     if (targetFalse == targetNum) break;
 
-} while (text("看视频").exists() || text("去完成").exists());
+} while (textButtonExist(targets));
 console.info("看广告结束");
 console.verbose(longdash);
 
