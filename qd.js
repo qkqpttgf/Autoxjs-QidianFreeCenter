@@ -135,12 +135,18 @@ function enterFreeCenter() {
         console.info("签到");
         sleep(2000);
     }
-    if (text("领福利").exists()) {
+    if (wherePage() != "index") {
+        // 周日兑换直接打开
+        console.log("周日直接跳转");
+        let m = 0;
+        while (m < 15 && wherePage() != "freecenter") {
+            m++;
+            console.verbose("缓冲");
+            sleep(1000);
+        }
+    } else if (text("领福利").exists()) {
         log("有“领福利”按钮");
         click("领福利", 0);
-    } else if (wherePage() == "freecenter") {
-        // 周日兑换直接打开
-        sleep(500);
     } else {
         //log(className("android.widget.FrameLayout").find().length);
         let uc = id("viewPager").className("androidx.viewpager.widget.ViewPager").scrollable(true).findOne(1000);
@@ -205,7 +211,7 @@ function video_look() {
                 c1++;
                 console.setPosition(c_pos[c1 % 2][0], c_pos[c1 % 2][1]);
                 toastLog("请手动过一下验证");
-                sleep(3000);
+                sleep(2000);
             }
             if (c1 > 0) console.setPosition(c_pos[0][0], c_pos[0][1]);
         }
@@ -578,7 +584,7 @@ sleep(3000);
 // 开始看广告
 log("开始看广告");
 let targets = ["看视频", "去完成"]; // 目标按钮字符
-let expstring = ["再玩", "更新提醒", "推送通知", "充值"]; // 目标按钮左边如果有这些字，跳过
+let expstring = ["再玩", "更新提醒", "推送通知", "充值", "携程"]; // 目标按钮左边如果有这些字，跳过
 do {
     let exppos = new Array();
     expstring.forEach(e => {
@@ -596,7 +602,7 @@ do {
             for (let ii = 0; ii < aa.length; ii++) {
                 let f = false;
                 for (let j = 0; j < exppos.length; j++) {
-                    if (Math.abs(aa[ii].bounds().top - exppos[j]) < 200) f = true;
+                    if (Math.abs(aa[ii].bounds().top - exppos[j]) < 100) f = true;
                 }
                 if (f) {
                     targetFalse++;
