@@ -1,11 +1,11 @@
 
-var closeButtonBottom = 220; // 新广告右上角的X的下沿高度，控制台也放这么高
+var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
 // 如果在你手机上控制台跟广告的X高度距离太远，请修改这个，因为会影响模拟扫描循环点击X；
 var t_click_step = 10;      // 循环扫描点击时，每步移这么远再点下一次
 var t_click_x_left = 100;   // 循环扫描点击区域的左边框，到屏幕右边的距离
 var t_click_x_right = 20;   // 循环扫描点击区域的右边框，到屏幕右边的距离
 var t_click_y_top = 30;     // 循环扫描点击区域的上边框，在closeButtonBottom上方这么多
-var t_click_y_bottom = 20;  // 循环扫描点击区域的下边框，在closeButtonBottom下方这么多
+var t_click_y_bottom = 40;  // 循环扫描点击区域的下边框，在closeButtonBottom下方这么多
 var t_click = new Object(); // 用于存储扫描点击成功的坐标
 
 //storages.remove("ysun.QidianFreeCenter");
@@ -13,17 +13,16 @@ var storage = storages.create("ysun.QidianFreeCenter");
 var closeCoord_name = "closeCoord";
 let tmp = storage.get(closeCoord_name);
 if (tmp) t_click = JSON.parse(tmp);
-var longdash = "———————";
+var longdash = "——————————";
 var freeCenterScrolled = 0;
 
 //setScreenMetrics(1080, 2310);
 console.show();
 auto.waitFor();
-console.setTitle("起点自动20251102");
+console.setTitle("起点自动20251104");
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
 console.setPosition(c_pos[0][0], c_pos[0][1]); // 控制台放上半，方便对比closeButtonBottom高度
 console.setSize(device.width / 2, device.width / 2);
-
 if (auto.service == null) {
     console.error("请先开启无障碍服务！");
     exit();
@@ -40,7 +39,7 @@ toastLog("请求截图权限 成功");
 try {
     if (paddle) console.log("有Paddle识别功能");
 } catch (error) {
-    console.error("无Paddle识别功能，请先安装Autox.js v7！");
+    console.error("无Paddle识别功能，推荐安装Autox.js v7！");
     exit();
 }
 console.log(longdash);
@@ -228,9 +227,6 @@ function lottery() {
     return result;
 }
 function video_look() {
-    if (textContains("播放将消耗流量").exists()) {
-        click("继续播放", 0);
-    }
     //判断是否进入视频播放页面
     let ad_raw = -1, ad_clicknewpage = -1; // 生页面、 要再点击一下的页面
     let m = 0;
@@ -662,24 +658,19 @@ function findIndexInParent(d) {
 }
 function getTextOfView(v) {
     if (v.childCount() > 1) {
-        let t = "";
+        let t = new Array();
         let v1 = v.children();
         for (let i = 0; i < v1.length; i++) {
-            t += "\n" + getTextOfView(v1[i]);
+            t.push(getTextOfView(v1[i]));
         }
-        if (t.length > 1) t = t.substring(1);
-        if (t.substring(t.length - 1) == "\n") t = t.substring(0, t.length - 1);
-        return t;
+        return t.join("\n");
     } else {
         return v.text();
     }
 }
 function getDescriptionOnLeft(b) {
     let j = findIndexInParent(b);
-    if (j > 0) {
-        let tmp = b.parent().child(j - 1).children();
-        return [getTextOfView(tmp[0]), getTextOfView(tmp[1])];
-    }
+    if (j > 0) return getTextOfView(b.parent().child(j - 1));
     return null;
 }
 function clickIknown() {
@@ -731,10 +722,9 @@ do {
                 let f = false;
                 let s = getDescriptionOnLeft(aa[ii]);
                 if (s) {
-                    let s1 = s.join("\n");
                     // 其实感觉这样判断可能以后会有隐患，或许以前用坐标高度不会出错
                     expstring.forEach(e => {
-                        if (s1.indexOf(e) > -1) f = true;
+                        if (s.indexOf(e) > -1) f = true;
                     });
                 }
                 if (f) {
@@ -743,11 +733,11 @@ do {
                     console.verbose(longdash);
                     viewADnum++;
                     console.verbose("广告", viewADnum);
-                    console.log(s[0]);
-                    console.verbose(s[1]);
+                    console.log(s);
                     aa[ii].click();
                     sleep(2000);
                     if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
+                    if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
                     video_look();
                     console.verbose("退出广告", viewADnum);
                     sleep(1000);
@@ -786,8 +776,8 @@ if (textContains(gameremain).exists()) {
         let aa = text(gamebtntext).find();
         for (let i = 0; i < aa.length; i++) {
             freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[i]);
-            let s = getDescriptionOnLeft(aa[i]).join("\n");
-            if (s.indexOf(gameremain) > -1) {
+            let s = getDescriptionOnLeft(aa[i]);
+            if (s && s.indexOf(gameremain) > -1) {
                 b = aa[i];
                 break;
             }
@@ -823,14 +813,15 @@ bonusButtonTexts.forEach(btnt => {
         let btn = text(btnt).find();
         for (let i = 0; i < btn.length; i++) {
             freeCenterScrolled = scrollShowButton(freeCenterScrolled, btn[i]);
-            let d = getDescriptionOnLeft(btn[i]);
+            let d = getDescriptionOnLeft(btn[i]).split("\n");
             console.verbose(d[0]);
             btn[i].click();
             bonusNum++;
             sleep(2000);
             clickIknown();
-            let d1 = getDescriptionOnLeft(btn[i]);
-            console.log(d1[1]);
+            let d1 = getDescriptionOnLeft(btn[i]).split("\n");
+            d1.shift();
+            console.log(d1.join("\n"));
         }
     }
 });
