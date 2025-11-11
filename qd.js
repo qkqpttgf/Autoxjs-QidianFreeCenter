@@ -1,4 +1,6 @@
 
+var logFile = false; // 是否将日志保存到文件中
+
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
 // 如果在你手机上控制台跟广告的X高度距离太远，请修改这个，因为会影响模拟扫描循环点击X；
 var t_click_step = 10;      // 循环扫描点击时，每步移这么远再点下一次
@@ -6,14 +8,13 @@ var t_click_x_left = 100;   // 循环扫描点击区域的左边框，到屏幕�
 var t_click_x_right = 20;   // 循环扫描点击区域的右边框，到屏幕右边的距离
 var t_click_y_top = 30;     // 循环扫描点击区域的上边框，在closeButtonBottom上方这么多
 var t_click_y_bottom = 40;  // 循环扫描点击区域的下边框，在closeButtonBottom下方这么多
-var t_click = new Object(); // 用于存储扫描点击成功的坐标
 
-var logFile = false;
-var debug = false;
+var t_click = new Object(); // 用于存储扫描点击成功的坐标
+var debug = false; // 开启debug循环
 //setScreenMetrics(1080, 2310);
 console.show();
 auto.waitFor();
-console.setTitle("20251109起点自动");
+console.setTitle("20251111起点自动");
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
 console.setPosition(c_pos[0][0], c_pos[0][1]); // 控制台放上半，方便对比closeButtonBottom高度
 console.setSize(device.width / 2, device.width / 2);
@@ -40,7 +41,6 @@ l_info("无障碍服务已开启");
 //device.setMusicVolume(0); // 要给autojs权限
 if (!requestScreenCapture()) {
     l_error("请求截图权限失败");
-    l_verbose("退出脚本");
     l_exit();
 }
 l_log("请求截图权限成功");
@@ -81,13 +81,13 @@ function openQidian() {
             // com.qidian.QDReader.ui.activity.SplashADActivity
             // com.qidian.QDReader.ui.activity.SplashImageActivity
             l_verbose("开屏广告");
-        } else if (a == "com.qidian.QDReader.ui.activity.QDReaderActivity") {
+        } else if (a.indexOf("activity.QDReader") > -1) {
             l_verbose("阅读界面");
             back();
-        } else if (a.indexOf("com.qidian.QDReader.ui.activity.chapter") > -1) {
+        } else if (a.indexOf("chapter") > -1) {
             l_verbose("本章说");
             back();
-        } else if (a.indexOf("com.qidian.QDReader.ui.activity.new_msg") > -1) {
+        } else if (a.indexOf("new_msg") > -1) {
             l_verbose("消息中心");
             back();
         } else if (wherePage() == "freecenter") {
@@ -183,16 +183,23 @@ function lottery() {
     let j = false;
     if (!cb) {
         let e = className("android.widget.ListView").findOne(500);
-        if (e.parent().clickable) {
+        if (e.parent().clickable()) {
             freeCenterScrolled = scrollShowButton(freeCenterScrolled, e);
             e.parent().click();
             j = true;
             l_verbose("点进签到日历");
             sleep(2000);
+            let b = className("android.widget.Button").text("领奖励").findOne(500);
+            if (b) {
+                b.click();
+                sleep(1000);
+            }
             scrollShowButton(device.height, 0); // 进入后它会自动向下滚，滚回
+            sleep(500);
+            cb = className("android.widget.TextView").textContains("抽奖机会 ×").findOne(500);
+        } else {
+            l_error("没找到链接，无法进入签到日历");
         }
-        sleep(1000);
-        cb = className("android.widget.TextView").textContains("抽奖机会 ×").findOne(500);
     }
     if (cb) {
         // 有抽奖机会
@@ -515,7 +522,7 @@ function video_look() {
                 l_verbose("尝试模拟“手势返回”");
                 back();
             } else {
-                l_error("未知原因退出失败，脚本停止运行");
+                l_error("未知原因退出失败");
                 l_exit();
             }
             sleep(1000);
@@ -561,7 +568,7 @@ function game_play(min) {
     l_verbose(longdash);
     sleep(1000);
 
-    debugDelay = 30000;
+    debugDelay = 30;
     do {
         if (textContains("实名认证").exists()) {
             //身份信息仅用于实名认证使用
@@ -579,8 +586,8 @@ function game_play(min) {
         sleep(1000);
         second--;
     } while (second > -5);
-    debugDelay = 1000;
-    l_log("游戏时间到");
+    debugDelay = 1;
+    l_log("时间到");
     do {
         back();
         sleep(600);
@@ -588,7 +595,8 @@ function game_play(min) {
     return 0;
 }
 function l_exit() {
-    if (debugLoop) debugLoop.interrupt();
+    threads.shutDownAll();
+    l_warn("退出");
     exit();
 }
 function myFormatDate(dt) {
@@ -748,7 +756,7 @@ function getTextOfView(v, e) {
     return "";
 }
 function getDescriptionOnLeft(b) {
-    let j = findIndexInParent(b);
+    let j = b.indexInParent();
     if (j > 0) return getTextOfView(b.parent().child(j - 1));
     return null;
 }
@@ -831,19 +839,25 @@ function sortFormatReceive() {
 }
 
 // 正式开始------------------------------------------------------------------
-var debugDelay = 1000;
+var debugDelay = 1;
 var debugLoop = null;
 if (debug) {
     debugLoop = threads.start(
         function t() {
+            let n = 0;
             while (1) {
-                sleep(debugDelay);
-                let p = currentPackage();
-                writeLog(p, getAppName(p), currentActivity(), wherePage());
+                sleep(1000);
+                n++;
+                if (n >= debugDelay) {
+                    let p = currentPackage();
+                    writeLog(p, getAppName(p), currentActivity(), wherePage());
+                    n = 0;
+                }
             }
         }
     );
 }
+
 
 home();
 sleep(500);
@@ -899,9 +913,19 @@ do {
                     l_verbose("广告", viewADnum, "开始");
                     l_log(s);
                     aa[ii].click();
+                    //(textContains("今日领奖上限").exists()) 
                     sleep(2000);
                     if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
                     if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
+                    let p = wherePage();
+                    if (p == "freecenter") {
+                        l_error("似乎没有点到，或没有跳转");
+                        l_exit();
+                    }
+                    if (p == "index") {
+                        l_warn("似乎跳首页了，请限制左边有某些词的时候不要点这个按钮");
+                        l_exit();
+                    }
                     video_look();
                     l_verbose("广告", viewADnum, "结束");
                     sleep(1000);
@@ -920,6 +944,7 @@ if (viewADnum > 0) {
 } else {
     l_log("无广告");
 }
+freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
 l_log(longdash);
 sleep(2000);
 
@@ -964,6 +989,7 @@ if (textContains(gameremain).exists()) {
         sleep(1000);
     } while (textContains(gameremain).exists());
     l_info("结束玩游戏");
+    freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
     l_log(longdash);
     sleep(1000);
 }
@@ -983,7 +1009,7 @@ bonusButtonTexts.forEach(btnt => {
             bonusNum++;
             sleep(2000);
             clickIknown();
-            let btn_now = btn[i].parent().child(findIndexInParent(btn[i]));
+            let btn_now = btn[i].parent().child(btn[i].indexInParent());
             if (btn_now.text() == btnt) {
                 l_error("似乎领取失败");
             } else {
@@ -1001,7 +1027,8 @@ sleep(1000);
 l_info("脚本已结束");
 l_log("记得清理auto.js后台");
 l_verbose("控制台3秒后自动关闭");
-if (debugLoop) debugLoop.interrupt();
 sleep(3000);
 console.hide();
+threads.shutDownAll();
 engines.stopAllAndToast();
+l_exit();
