@@ -119,10 +119,13 @@ function enterFreeCenter() {
     if (wherePage() != "index") openQidian();
     sleep(1000);
 
-    if (text("签到").exists()) {
-        click("签到", 0);
-        l_info("签到");
-        sleep(2000);
+    if (id("btnCheckIn").exists()) {
+        let btn = id("btnCheckIn").findOne(500);
+        if (btn && getTextOfView(btn).indexOf("签到") > -1) {
+            btn.click();
+            l_info("签到");
+            sleep(2000);
+        }
     }
     if (wherePage() != "index") {
         // 周日兑换直接打开
@@ -256,7 +259,7 @@ function video_look() {
     do {
         l_verbose("缓冲……");
         sleep(1000);
-        if (textContains("验证").exists() || id("tcaptcha_transform_dy").exists()) {
+        if (textContains("验证").exists()) {
             let c1 = 0;
             while (textContains("验证").exists()) {
                 c1++;
@@ -267,6 +270,9 @@ function video_look() {
             }
             if (c1 > 0) console.setPosition(c_pos[0][0], c_pos[0][1]);
             m = 0;
+        } else if (wherePage() == "freecenter") {
+            l_error("似乎没有点到，或没有跳转");
+            l_exit();
         }
         m++;
         if (m > 2) {
@@ -730,7 +736,7 @@ function scrollShowButton(scrolled, btn) {
     }
     return scrolled;
 }
-function findIndexInParent(d) {
+/*function findIndexInParent(d) {
     let p = d.parent();
     if (!p) return -1;
     let c = p.children();
@@ -738,7 +744,7 @@ function findIndexInParent(d) {
         if (c[i].equals(d)) return i;
     }
     return -1;
-}
+}*/
 function getTextOfView(v, e) {
     if (v.equals(e)) return "";
     if (v.className() == "android.widget.TextView") {
@@ -757,7 +763,13 @@ function getTextOfView(v, e) {
 }
 function getDescriptionOnLeft(b) {
     let j = b.indexInParent();
-    if (j > 0) return getTextOfView(b.parent().child(j - 1));
+    let t = b.bounds().top;
+    let c = b.parent().children();
+    let r = new Array();
+    for (let i = 0; i < c.length; i++) {
+        if (i != j && Math.abs(c[i].bounds().top - t) < 100) r.push(getTextOfView(c[i]));
+    }
+    if (r.length > 0) return r.join("\n");
     return null;
 }
 function clickIknown() {
@@ -860,7 +872,7 @@ if (debug) {
 
 
 home();
-sleep(500);
+sleep(1500);
 
 // 打开起点
 openQidian();
@@ -895,12 +907,10 @@ do {
             let aa = text(target).find();
             targetNum += aa.length;
             for (let ii = 0; ii < aa.length; ii++) {
-                freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
                 //l_verbose(target);
                 let f = false;
                 let s = getDescriptionOnLeft(aa[ii]);
                 if (s) {
-                    // 其实感觉这样判断可能以后会有隐患，或许以前用坐标高度不会出错
                     expstring.forEach(e => {
                         if (s.indexOf(e) > -1) f = true;
                     });
@@ -908,6 +918,7 @@ do {
                 if (f) {
                     targetFalse++;
                 } else {
+                    freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
                     l_verbose(longdash);
                     viewADnum++;
                     l_verbose("广告", viewADnum, "开始");
@@ -917,12 +928,7 @@ do {
                     sleep(2000);
                     if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
                     if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
-                    let p = wherePage();
-                    if (p == "freecenter") {
-                        l_error("似乎没有点到，或没有跳转");
-                        l_exit();
-                    }
-                    if (p == "index") {
+                    if (wherePage() == "index") {
                         l_warn("似乎跳首页了，请限制左边有某些词的时候不要点这个按钮");
                         l_exit();
                     }
@@ -955,16 +961,18 @@ let gamebtntext = "去完成"; // 按钮字符
 let gameremain = "再玩"; // 有这个字符，进入玩游戏
 if (textContains(gameremain).exists()) {
     l_log("开始玩游戏");
+    let playLabel = textContains(gameremain).findOne(500);
+    freeCenterScrolled = scrollShowButton(freeCenterScrolled, playLabel);
     let num = 0;
     do {
         if (num > 5) {
             l_error("已经循环5次了，可能哪里判定不太对，先退出");
             break;
         }
+        playLabel = textContains(gameremain).findOne(500);
         let b = null;
         let aa = text(gamebtntext).find();
         for (let i = 0; i < aa.length; i++) {
-            freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[i]);
             let s = getDescriptionOnLeft(aa[i]);
             if (s && s.indexOf(gameremain) > -1) {
                 b = aa[i];
@@ -972,7 +980,6 @@ if (textContains(gameremain).exists()) {
             }
         }
         if (b != null) {
-            let playLabel = textContains(gameremain).findOne(500);
             l_log(playLabel.text());
             let min = playLabel.text().replace(/[^\d]/g, "");
             b.click();
@@ -1002,14 +1009,15 @@ bonusButtonTexts.forEach(btnt => {
     if (text(btnt).exists()) {
         let btn = text(btnt).find();
         for (let i = 0; i < btn.length; i++) {
-            freeCenterScrolled = scrollShowButton(freeCenterScrolled, btn[i]);
             l_verbose(longdash);
             l_verbose(getDescriptionOnLeft(btn[i]));
-            btn[i].click();
+            freeCenterScrolled = scrollShowButton(freeCenterScrolled, btn[i]);
+            let btn_now = btn[i].parent().child(btn[i].indexInParent());
+            btn_now.click();
             bonusNum++;
             sleep(2000);
             clickIknown();
-            let btn_now = btn[i].parent().child(btn[i].indexInParent());
+            btn_now = btn[i].parent().child(btn[i].indexInParent());
             if (btn_now.text() == btnt) {
                 l_error("似乎领取失败");
             } else {
@@ -1027,8 +1035,8 @@ sleep(1000);
 l_info("脚本已结束");
 l_log("记得清理auto.js后台");
 l_verbose("控制台3秒后自动关闭");
+threads.shutDownAll();
 sleep(3000);
 console.hide();
-threads.shutDownAll();
 engines.stopAllAndToast();
 l_exit();
