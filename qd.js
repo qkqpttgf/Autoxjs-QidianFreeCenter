@@ -14,7 +14,7 @@ var debug = false; // 开启debug循环
 //setScreenMetrics(1080, 2310);
 console.show();
 auto.waitFor();
-console.setTitle("20251111起点自动");
+console.setTitle("20251113起点自动");
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
 console.setPosition(c_pos[0][0], c_pos[0][1]); // 控制台放上半，方便对比closeButtonBottom高度
 console.setSize(device.width / 2, device.width / 2);
@@ -747,7 +747,7 @@ function scrollShowButton(scrolled, btn) {
 }*/
 function getTextOfView(v, e) {
     if (v.equals(e)) return "";
-    if (v.className() == "android.widget.TextView") {
+    if (v.className() == "android.widget.TextView" && v.text() != "") {
         return v.text();
     }
     if (v.childCount() > 0) {
@@ -903,40 +903,40 @@ do {
     let targetNum = 0, targetFalse = 0;
     for (let i = 0; i < targets.length; i++) {
         let target = targets[i];
-        if (text(target).exists()) {
-            let aa = text(target).find();
-            targetNum += aa.length;
-            for (let ii = 0; ii < aa.length; ii++) {
-                //l_verbose(target);
-                let f = false;
-                let s = getDescriptionOnLeft(aa[ii]);
-                if (s) {
-                    expstring.forEach(e => {
-                        if (s.indexOf(e) > -1) f = true;
-                    });
+        if (!text(target).exists()) continue;
+
+        let aa = text(target).find();
+        targetNum += aa.length;
+        for (let ii = aa.length - 1; ii > -1; ii--) {
+            //l_verbose(target);
+            let f = false;
+            let s = getDescriptionOnLeft(aa[ii]);
+            if (s) {
+                expstring.forEach(e => {
+                    if (s.indexOf(e) > -1) f = true;
+                });
+            }
+            if (f) {
+                targetFalse++;
+            } else {
+                freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
+                l_verbose(longdash);
+                viewADnum++;
+                l_verbose("广告", viewADnum, "开始");
+                l_log(s);
+                aa[ii].click();
+                //(textContains("今日领奖上限").exists()) 
+                sleep(2000);
+                if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
+                if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
+                if (wherePage() == "index") {
+                    l_warn("似乎跳首页了，请限制左边有某些词的时候不要点这个按钮");
+                    l_exit();
                 }
-                if (f) {
-                    targetFalse++;
-                } else {
-                    freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
-                    l_verbose(longdash);
-                    viewADnum++;
-                    l_verbose("广告", viewADnum, "开始");
-                    l_log(s);
-                    aa[ii].click();
-                    //(textContains("今日领奖上限").exists()) 
-                    sleep(2000);
-                    if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
-                    if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
-                    if (wherePage() == "index") {
-                        l_warn("似乎跳首页了，请限制左边有某些词的时候不要点这个按钮");
-                        l_exit();
-                    }
-                    video_look();
-                    l_verbose("广告", viewADnum, "结束");
-                    sleep(1000);
-                    break; // 不然会先按下面的，刚刚按过现在又亮起来的会下次循环按
-                }
+                video_look();
+                l_verbose("广告", viewADnum, "结束");
+                sleep(1000);
+                break; // 不然会先按下面的，刚刚按过现在又亮起来的会下次循环按
             }
         }
     }
