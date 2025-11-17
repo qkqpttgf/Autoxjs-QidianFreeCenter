@@ -14,20 +14,22 @@ var debug = false; // 开启debug循环
 //setScreenMetrics(1080, 2310);
 console.show();
 auto.waitFor();
-console.setTitle("20251113起点自动");
-var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
-console.setPosition(c_pos[0][0], c_pos[0][1]); // 控制台放上半，方便对比closeButtonBottom高度
+console.setTitle("251117起点自动");
 console.setSize(device.width / 2, device.width / 2);
+var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
+setConPos(0); // 控制台放上半，方便对比closeButtonBottom高度
 
+var qidianPackageName = "com.qidian.QDReader";
+var longdash = "——————————";
+var freeCenterScrolled = 0;
+// 扫描点击的坐标持久化
 var thisLable = "ysun.QidianFreeCenter";
-//storages.remove(thisLable);
+//storages.remove(thisLable); // 删除、重置
 var storage = storages.create(thisLable);
 var closeCoord_name = "closeCoord";
 let tmp = storage.get(closeCoord_name);
 if (tmp) t_click = JSON.parse(tmp);
-var qidianPackageName = "com.qidian.QDReader";
-var longdash = "——————————";
-var freeCenterScrolled = 0;
+// 日志存放位置
 var logFilePath = files.cwd() + "/log/" + thisLable + "/";
 if (logFile || debug) files.createWithDirs(logFilePath);
 
@@ -193,33 +195,57 @@ function lottery() {
             l_verbose("点进签到日历");
             sleep(2000);
             let b = className("android.widget.Button").text("领奖励").findOne(500);
-            if (b) {
+            if (b) { // 连签礼
                 b.click();
                 sleep(1000);
             }
             scrollShowButton(device.height, 0); // 进入后它会自动向下滚，滚回
             sleep(500);
             cb = className("android.widget.TextView").textContains("抽奖机会 ×").findOne(500);
+            if (!cb) cb = className("android.widget.TextView").text("做任务可抽奖").findOne(500);
         } else {
             l_error("没找到链接，无法进入签到日历");
         }
     }
-    if (cb) {
+    if (cb && (cb.text().indexOf("×") < 0 || (cb.text().indexOf("×") > 0 && cb.text().replace(/[^\d]/g, "") * 1 > 0))) {
         // 有抽奖机会
         l_verbose(cb.text());
         if (j) scrollShowButton(0, cb);
         else freeCenterScrolled = scrollShowButton(freeCenterScrolled, cb);
         cb.click();
         sleep(1000);
-        let c = null;
-        while (c = className("android.widget.TextView").text("抽奖").findOne(500)) {
-            l_log(c.text());
-            c.click();
-            result = 1;
-            sleep(5000);
+        while (1) {
+            l_verbose(longdash);
+            let c = className("android.widget.TextView").text("抽奖").findOne(500);
+            if (!c) {
+                let v = className("android.widget.TextView").text("做任务抽奖机会+1").findOne(500);
+                if (v) {
+                    l_log(v.text());
+                    v.click();
+                    sleep(2000);
+                    video_look(v);
+                    sleep(1000);
+                    c = className("android.widget.TextView").text("抽奖").findOne(500);
+                }
+            }
+            if (c) {
+                l_log(c.text());
+                c.click();
+                while (c.text() == refreshView(c).text()) {
+                    l_verbose("转");
+                    sleep(1000);
+                }
+                showReceived(getLotteryReceive(c.parent().child(c.indexInParent() - 1)));
+                result |= 0b01;
+                sleep(1000);
+            } else {
+                break;
+            }
         }
+        if (result & 0b01) l_info("抽奖完成");
         className("android.widget.TextView").text("").findOne(500).click(); // 关闭
-    } else {
+    }
+    if (j) {
         let d = className("android.widget.Button").text("去兑换 今日").findOne(500);
         if (d) {
             // 今日有周日兑换
@@ -235,40 +261,46 @@ function lottery() {
                         if (p1[i].clickable() && p1[i].text() == "兑换") {
                             l_log(d1.text());
                             p1[i].click();
-                            result = 2;
                             sleep(1000);
                             className("android.widget.Button").text("兑换").findOne(500).click();
                             sleep(2000);
-                            if (p1[i].parent().child(i).text() != p1[i].text()) l_verbose("兑换成功");
+                            if (refreshView(p1[i]).text() != p1[i].text()) {
+                                result |= 0b10;
+                                l_info("兑换成功");
+                            }
                         }
                     }
                 }
             }
         }
-    }
-    if (j) {
         back();
         sleep(2000);
     }
     return result;
 }
-function video_look() {
+function video_look(btn) {
     //判断是否进入视频播放页面
     let ad_raw = -1, ad_clicknewpage = -1; // 生页面、 要再点击一下的页面
     let m = 0;
     do {
         l_verbose("缓冲……");
         sleep(1000);
+        if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
+        if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
+        if (wherePage() == "index") {
+            l_warn("似乎跳首页了，请限制左边有某些词的时候不要点这个按钮");
+            l_exit();
+        }
         if (textContains("验证").exists()) {
             let c1 = 0;
             while (textContains("验证").exists()) {
                 c1++;
-                console.setPosition(c_pos[c1 % 2][0], c_pos[c1 % 2][1]);
+                setConPos(c1 % 2);
                 //toastLog
                 l_log("请手动过一下验证");
                 sleep((1 + c1 % 2) * 1000);
             }
-            if (c1 > 0) console.setPosition(c_pos[0][0], c_pos[0][1]);
+            if (c1 > 0) setConPos(0);
             m = 0;
         } else if (wherePage() == "freecenter") {
             l_error("似乎没有点到，或没有跳转");
@@ -393,7 +425,7 @@ function video_look() {
             } else {
                 sleep(1000);
             }
-        } while (wherePage() != "freecenter");
+        } while (!btn.parent());
 
         if (!(xc == xr && yc == yt)) {
             yc -= t_click_step;
@@ -532,7 +564,7 @@ function video_look() {
                 l_exit();
             }
             sleep(1000);
-        } while (wherePage() != "freecenter");
+        } while (!btn.parent());
     }
     sleep(1000);
     clickIknown();
@@ -600,6 +632,11 @@ function game_play(min) {
     } while (wherePage() == "");
     return 0;
 }
+function setConPos(n) {
+    if (n * 1 !== n) n = 0;
+    if (n > c_pos.length - 1) n = 0;
+    console.setPosition(c_pos[n][0], c_pos[n][1]);
+}
 function l_exit() {
     threads.shutDownAll();
     l_warn("退出");
@@ -653,6 +690,9 @@ function l_error(...s) {
     if (logFile || debug) writeLog.apply(null, s);
 }
 function wherePage() {
+    if (textContains("无响应").exists() && text("确定").exists()) {
+        click("确定", 0);
+    }
     /* 用current判断就会出事
     if (currentPackage() != "com.qidian.QDReader") {
         // 不在起点APP
@@ -661,15 +701,23 @@ function wherePage() {
     }
     if (currentActivity() == "com.qidian.QDReader.ui.activity.MainGroupActivity") {
         return "index";
-    }*/
+    }
+    // com.qidian.QDReader.ui.activity.QDBrowserActivity 可能是福利中心也可能是游戏中心
+    if (currentActivity() == "com.qq.e.tg.RewardvideoPortraitADActivity") {
+    // 广告框架
+       return "adframe";
+    } */
     if (text("书架").exists() && text("精选").exists() && text("发现").exists() && text("我").exists()) {
         // 首页或精选或我
         return "index";
     }
-    // com.qidian.QDReader.ui.activity.QDBrowserActivity 可能是福利中心也可能是游戏中心
     if (text("完成任务得奖励").exists() || text("激励任务").exists()) {
         // 福利中心
-        return "freecenter"
+        return "freecenter";
+    }
+    if (text("签到详情").exists() || text("连签有礼").exists()) {
+        // 签到日历
+        return "signdetail";
     }
     if (text("阅游戏").exists() && text("在线玩").exists()) {
         // 游戏中心
@@ -678,9 +726,6 @@ function wherePage() {
     if (id("browser_container").exists()) {
         // 网页，可能是游戏
         return "browser";
-    }
-    if (textContains("无响应").exists() && text("确定").exists()) {
-        click("确定", 0);
     }
     return "";
 }
@@ -703,6 +748,22 @@ function textButtonExist(str) {
         if (text(str).exists()) return true;
     }
     return false;
+}
+function refreshView(v) {
+    return v.parent().child(v.indexInParent());
+}
+function getLotteryReceive(v) {
+    let top1 = v.bounds().top;
+    let bottom1 = v.bounds().bottom;
+    let c = v.child(0).children();
+    for (let i = 0; i < c.length; i++) {
+        if (c[i].className() == "android.widget.TextView") {
+            if (c[i].bounds().top > top1 && c[i].bounds().bottom < bottom1) {
+                return c[i].text();
+            }
+        }
+    }
+    return null;
 }
 function scrollShowButton(scrolled, btn) {
     let btn_top = 0;
@@ -772,14 +833,17 @@ function getDescriptionOnLeft(b) {
     if (r.length > 0) return r.join("\n");
     return null;
 }
+function showReceived(r) {
+    if (r.indexOf("章节卡") > -1 || r.indexOf("点币") > -1) l_info(r);
+    else l_log(r);
+}
 function clickIknown() {
     if (textContains("知道了").exists()) {
         let t = textContains("知道了").findOne(500);
         let t1 = getTextOfView(t.parent().parent(), t);
         t.click();
         //click("知道了", 0);
-        if (t1.indexOf("章节卡") > -1 || t1.indexOf("点币") > -1) l_info(t1);
-        else l_log(t1);
+        showReceived(t1);
         let a = "恭喜获得";
         if (t1.substring(0, a.length) == a) {
             let b = t1.substring(a.length);
@@ -788,7 +852,9 @@ function clickIknown() {
             else ADReceive[b] = 1;
         }
         sleep(2000);
+        return 1;
     }
+    return 0;
 }
 function sortFormatReceive() {
     function indexLastNum(str) {
@@ -887,9 +953,7 @@ sleep(2000);
 // 签到里面的抽奖、兑换
 l_log("开始抽奖");
 let result = lottery();
-if (result == 1) l_info("抽奖完成");
-else if (result == 2) l_info("兑换完成");
-else l_log("无抽奖");
+if (result == 0) l_log("无抽奖");
 l_log(longdash);
 sleep(2000);
 
@@ -925,15 +989,8 @@ do {
                 l_verbose("广告", viewADnum, "开始");
                 l_log(s);
                 aa[ii].click();
-                //(textContains("今日领奖上限").exists()) 
                 sleep(2000);
-                if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
-                if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
-                if (wherePage() == "index") {
-                    l_warn("似乎跳首页了，请限制左边有某些词的时候不要点这个按钮");
-                    l_exit();
-                }
-                video_look();
+                video_look(aa[ii]);
                 l_verbose("广告", viewADnum, "结束");
                 sleep(1000);
                 break; // 不然会先按下面的，刚刚按过现在又亮起来的会下次循环按
@@ -1012,18 +1069,19 @@ bonusButtonTexts.forEach(btnt => {
             l_verbose(longdash);
             l_verbose(getDescriptionOnLeft(btn[i]));
             freeCenterScrolled = scrollShowButton(freeCenterScrolled, btn[i]);
-            let btn_now = btn[i].parent().child(btn[i].indexInParent());
+            let btn_now = refreshView(btn[i]);
             btn_now.click();
             bonusNum++;
             sleep(2000);
-            clickIknown();
-            btn_now = btn[i].parent().child(btn[i].indexInParent());
-            if (btn_now.text() == btnt) {
-                l_error("似乎领取失败");
-            } else {
-                let d1 = getDescriptionOnLeft(btn_now).split("\n");
-                d1.shift();
-                l_log(d1.join("\n"));
+            if (!clickIknown()) {
+                btn_now = refreshView(btn[i]);
+                if (btn_now.text() == btnt) {
+                    l_error("似乎领取失败");
+                } else {
+                    let d1 = getDescriptionOnLeft(btn_now).split("\n");
+                    d1.shift();
+                    l_log(d1.join("\n"));
+                }
             }
         }
     }
