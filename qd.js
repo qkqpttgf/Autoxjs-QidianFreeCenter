@@ -14,20 +14,22 @@ var debug = false; // 开启debug循环
 //setScreenMetrics(1080, 2310);
 console.show();
 auto.waitFor();
-console.setTitle("20251116起点自动");
+console.setTitle("251117起点自动");
 console.setSize(device.width / 2, device.width / 2);
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
 setConPos(0); // 控制台放上半，方便对比closeButtonBottom高度
 
+var qidianPackageName = "com.qidian.QDReader";
+var longdash = "——————————";
+var freeCenterScrolled = 0;
+// 扫描点击的坐标持久化
 var thisLable = "ysun.QidianFreeCenter";
-//storages.remove(thisLable);
+//storages.remove(thisLable); // 删除、重置
 var storage = storages.create(thisLable);
 var closeCoord_name = "closeCoord";
 let tmp = storage.get(closeCoord_name);
 if (tmp) t_click = JSON.parse(tmp);
-var qidianPackageName = "com.qidian.QDReader";
-var longdash = "——————————";
-var freeCenterScrolled = 0;
+// 日志存放位置
 var logFilePath = files.cwd() + "/log/" + thisLable + "/";
 if (logFile || debug) files.createWithDirs(logFilePath);
 
@@ -221,7 +223,7 @@ function lottery() {
                     l_log(v.text());
                     v.click();
                     sleep(2000);
-                    video_look();
+                    video_look(v);
                     sleep(1000);
                     c = className("android.widget.TextView").text("抽奖").findOne(500);
                 }
@@ -276,7 +278,7 @@ function lottery() {
     }
     return result;
 }
-function video_look() {
+function video_look(btn) {
     //判断是否进入视频播放页面
     let ad_raw = -1, ad_clicknewpage = -1; // 生页面、 要再点击一下的页面
     let m = 0;
@@ -423,7 +425,7 @@ function video_look() {
             } else {
                 sleep(1000);
             }
-        } while (wherePage() != "freecenter" && currentActivity() == "com.qq.e.tg.RewardvideoPortraitADActivity");
+        } while (!btn.parent());
 
         if (!(xc == xr && yc == yt)) {
             yc -= t_click_step;
@@ -562,7 +564,7 @@ function video_look() {
                 l_exit();
             }
             sleep(1000);
-        } while (wherePage() != "freecenter");
+        } while (!btn.parent());
     }
     sleep(1000);
     clickIknown();
@@ -688,6 +690,9 @@ function l_error(...s) {
     if (logFile || debug) writeLog.apply(null, s);
 }
 function wherePage() {
+    if (textContains("无响应").exists() && text("确定").exists()) {
+        click("确定", 0);
+    }
     /* 用current判断就会出事
     if (currentPackage() != "com.qidian.QDReader") {
         // 不在起点APP
@@ -696,12 +701,16 @@ function wherePage() {
     }
     if (currentActivity() == "com.qidian.QDReader.ui.activity.MainGroupActivity") {
         return "index";
-    }*/
+    }
+    // com.qidian.QDReader.ui.activity.QDBrowserActivity 可能是福利中心也可能是游戏中心
+    if (currentActivity() == "com.qq.e.tg.RewardvideoPortraitADActivity") {
+    // 广告框架
+       return "adframe";
+    } */
     if (text("书架").exists() && text("精选").exists() && text("发现").exists() && text("我").exists()) {
         // 首页或精选或我
         return "index";
     }
-    // com.qidian.QDReader.ui.activity.QDBrowserActivity 可能是福利中心也可能是游戏中心
     if (text("完成任务得奖励").exists() || text("激励任务").exists()) {
         // 福利中心
         return "freecenter";
@@ -710,10 +719,6 @@ function wherePage() {
         // 签到日历
         return "signdetail";
     }
-    if (currentActivity() == "com.qq.e.tg.RewardvideoPortraitADActivity") {
-        // 广告框架
-        return "adframe";
-    }
     if (text("阅游戏").exists() && text("在线玩").exists()) {
         // 游戏中心
         return "gamecenter";
@@ -721,9 +726,6 @@ function wherePage() {
     if (id("browser_container").exists()) {
         // 网页，可能是游戏
         return "browser";
-    }
-    if (textContains("无响应").exists() && text("确定").exists()) {
-        click("确定", 0);
     }
     return "";
 }
@@ -988,7 +990,7 @@ do {
                 l_log(s);
                 aa[ii].click();
                 sleep(2000);
-                video_look();
+                video_look(aa[ii]);
                 l_verbose("广告", viewADnum, "结束");
                 sleep(1000);
                 break; // 不然会先按下面的，刚刚按过现在又亮起来的会下次循环按
