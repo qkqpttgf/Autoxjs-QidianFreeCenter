@@ -4,8 +4,8 @@ var logFile = false; // 是否将日志保存到文件中
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
 // 如果在你手机上控制台跟广告的X高度距离太远，请修改这个，因为会影响模拟扫描循环点击X；
 var t_click_step = 10;      // 循环扫描点击时，每步移这么远再点下一次
-var t_click_x_left = 100;   // 循环扫描点击区域的左边框，到屏幕右边的距离
-var t_click_x_right = 20;   // 循环扫描点击区域的右边框，到屏幕右边的距离
+var t_click_x_left = 90;   // 循环扫描点击区域的左边框，到屏幕右边的距离
+var t_click_x_right = 30;   // 循环扫描点击区域的右边框，到屏幕右边的距离
 var t_click_y_top = 30;     // 循环扫描点击区域的上边框，在closeButtonBottom上方这么多
 var t_click_y_bottom = 40;  // 循环扫描点击区域的下边框，在closeButtonBottom下方这么多
 
@@ -14,7 +14,7 @@ var debug = false; // 开启debug循环
 //setScreenMetrics(1080, 2310);
 console.show();
 auto.waitFor();
-console.setTitle("251118起点自动");
+console.setTitle("251119起点自动");
 console.setSize(device.width / 2, device.width / 2);
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
 setConPos(0); // 控制台放上半，方便对比closeButtonBottom高度
@@ -34,6 +34,7 @@ if (tmp) t_click = JSON.parse(tmp);
 // 日志存放位置
 var logFilePath = files.cwd() + "/log/" + thisLable + "/";
 if (logFile || debug) files.createWithDirs(logFilePath);
+var nickname = "";
 
 l_log("\n\n");
 if (auto.service == null) {
@@ -106,7 +107,11 @@ function openQidian() {
     } while (wherePage() != "index");
     sleep(600);
     t();
-    back(); // 有时启动后会在 精选 页
+    if (enterMe()) {
+        nickname = id("tvName").findOne(500).text();
+        l_log("当前账号：", nickname);
+    }
+    back();
     sleep(600);
     t();
     sleep(600);
@@ -118,6 +123,33 @@ function openQidian() {
     swipe(device.width - 50, device.height / 2, device.width - 60, device.height / 2 + 100, 500);
 
     l_info("起点已启动成功");
+}
+function enterMe() {
+    let uc = id("viewPager").className("androidx.viewpager.widget.ViewPager").scrollable(true).findOne(500);
+    let uc1 = id("view_tab_title_title").className("android.widget.TextView").text("我").findOne(500);
+    if (uc1 && uc1.parent().clickable()) {
+        //方案一.1
+        uc1.parent().click();
+    } else if (uc1 && uc1.parent().parent().clickable()) {
+        //方案一.2
+        uc1.parent().parent().click();
+    } else if (uc) {
+        //方案二
+        let x1 = uc.bounds().right;
+        let y1 = uc.bounds().bottom;
+        click((x1 - 10), (y1 + 10));
+    } else {
+        //方案三
+        click(device.width - 100, device.height - 100);
+    }
+    sleep(1000);
+    if (id("tvName").exists() || id("userInfo").exists() || text("福利中心").exists()) {
+        l_log("成功打开“我”");
+        return true;
+    }
+    l_warn("似乎未成功打开“我”");
+    l_warn(wherePage(), currentPackage(), currentActivity());
+    return false;
 }
 function enterFreeCenter() {
     if (id("btnCheckIn").exists()) {
@@ -141,30 +173,7 @@ function enterFreeCenter() {
         l_log("领福利");
         click("领福利", 0);
     } else {
-        let uc = id("viewPager").className("androidx.viewpager.widget.ViewPager").scrollable(true).findOne(1000);
-        let uc1 = id("view_tab_title_title").className("android.widget.TextView").text("我").findOne(1000);
-        if (uc1 && uc1.parent().clickable()) {
-            //方案一.1
-            uc1.parent().click();
-        } else if (uc1 && uc1.parent().parent().clickable()) {
-            //方案一.2
-            uc1.parent().parent().click();
-        } else if (uc) {
-            //方案二
-            let x1 = uc.bounds().right;
-            let y1 = uc.bounds().bottom;
-            click((x1 - 10), (y1 + 10));
-        } else {
-            //方案三
-            click(device.width - 100, device.height - 100);
-        }
-        sleep(3000);
-        if (!text("福利中心").exists()) {
-            l_warn(wherePage(), currentPackage(), currentActivity());
-            l_warn("没有“福利中心”字样，似乎未成功打开“我”");
-            l_exit();
-        }
-        l_log("成功打开“我”");
+        if (!enterMe()) l_exit();
         click("福利中心", 0);
     }
     let m = 0;
@@ -309,7 +318,7 @@ function video_look(btn) {
             }
             if (c1 > 0) setConPos(0);
             m = 0;
-        } else if (!!btn.parent()) {
+        } else if (m > 2 && !!btn.parent()) {
             l_error("似乎没有点到，或没有跳转");
             l_exit();
         }
@@ -1082,8 +1091,9 @@ if (bonusNum == 0) l_log("无");
 l_log(longdash);
 sleep(1000);
 
-if (Object.keys(ADReceive).length > 0) l_verbose("本次共看", viewADnum, "个广告\n获得：\n".concat(sortFormatReceive()));
 l_info("脚本已结束");
+l_log("当前账号：", nickname);
+if (Object.keys(ADReceive).length > 0) l_verbose("本次共看", viewADnum, "个广告\n获得：\n".concat(sortFormatReceive()));
 l_log("记得清理auto.js后台");
 l_verbose("控制台3秒后自动关闭");
 threads.shutDownAll();
