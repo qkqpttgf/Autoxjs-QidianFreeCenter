@@ -58,26 +58,8 @@ try {
 l_log(longdash);
 
 function openQidian() {
-    launch(qidianPackageName);
-    waitForPackage(qidianPackageName);
+    launchQidian();
 
-    function t() {
-        if (id("imgClose").exists()) {
-            l_verbose("首页悬浮广告");
-            sleep(500);
-            id("imgClose").findOne(500).click();
-        }
-        if (id("upgrade_dialog_close_btn").exists()) {
-            l_verbose("升级提醒");
-            sleep(500);
-            id("upgrade_dialog_close_btn").findOne(500).click();
-        }
-        if (textContains("青少年模式").exists && textContains("青少年模式").findOne(500)) {
-            l_verbose("青少年模式");
-            sleep(500);
-            click("我知道了", 0);
-        }
-    }
     let n = 0;
     do {
         n++;
@@ -102,18 +84,14 @@ function openQidian() {
             l_verbose("缓冲……");
         }
         sleep(1000);
-        t();
+        closeDialogs();
         if (n > 15 && currentPackage() != qidianPackageName) break;
     } while (wherePage() != "index");
     sleep(600);
-    t();
-    if (enterMe()) {
-        nickname = id("tvName").findOne(500).text();
-        l_log("当前账号：", nickname);
-    }
+    enterMe();
     back();
     sleep(600);
-    t();
+    closeDialogs();
     sleep(600);
     if (wherePage() != "index") {
         l_warn(wherePage(), currentPackage(), currentActivity());
@@ -125,6 +103,8 @@ function openQidian() {
     l_info("起点已启动成功");
 }
 function enterMe() {
+    launchQidian();
+    closeDialogs();
     let uc = id("viewPager").className("androidx.viewpager.widget.ViewPager").scrollable(true).findOne(500);
     let uc1 = id("view_tab_title_title").className("android.widget.TextView").text("我").findOne(500);
     if (uc1 && uc1.parent().clickable()) {
@@ -143,8 +123,13 @@ function enterMe() {
         click(device.width - 100, device.height - 100);
     }
     sleep(1000);
+    launchQidian();
+    closeDialogs();
     if (id("tvName").exists() || id("userInfo").exists() || text("福利中心").exists()) {
-        l_log("成功打开“我”");
+        //l_log("成功打开“我”");
+        nickname = id("tvName").findOne(500).text();
+        l_log("当前账号：", nickname);
+        sleep(1000);
         return true;
     }
     l_warn("似乎未成功打开“我”");
@@ -189,6 +174,23 @@ function enterFreeCenter() {
         l_exit();
     }
     l_info("已进入福利中心");
+}
+function closeDialogs() {
+    if (id("imgClose").exists()) {
+        l_verbose("首页悬浮广告");
+        sleep(500);
+        id("imgClose").findOne(500).click();
+    }
+    if (id("upgrade_dialog_close_btn").exists()) {
+        l_verbose("升级提醒");
+        sleep(500);
+        id("upgrade_dialog_close_btn").findOne(500).click();
+    }
+    if (textContains("青少年模式").exists && textContains("青少年模式").findOne(500)) {
+        l_verbose("青少年模式");
+        sleep(500);
+        click("我知道了", 0);
+    }
 }
 function lottery() {
     let result = 0;
@@ -384,7 +386,7 @@ function video_look(btn) {
         let xc = xr, yc = yt;
         do {
             n++;
-            launchQidainIfNot();
+            launchQidian();
 
             if (n < try_back_time + 1) {
                 // 有些旧版本，或手机没装应该跳的app，可能有用
@@ -747,13 +749,16 @@ function wherePage() {
     }
     return "";
 }
-function launchQidainIfNot() {
+function launchQidian() {
     // 如果当前不在起点，先直接切换回起点
     let p = currentPackage();
     if (p != qidianPackageName) {
         l_verbose(p, getAppName(p));
+        home();
+        sleep(900);
         launch(qidianPackageName);
-        sleep(1000);
+        waitForPackage(qidianPackageName, 500);
+        sleep(500);
     }
 }
 function textButtonExist(str) {
@@ -944,9 +949,6 @@ if (debug) {
     );
 }
 
-
-home();
-sleep(1500);
 
 // 打开起点
 openQidian();
