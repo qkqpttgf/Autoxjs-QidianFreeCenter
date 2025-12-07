@@ -4,8 +4,8 @@ var logFile = false; // 是否将日志保存到文件中
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
 // 如果在你手机上控制台跟广告的X高度距离太远，请修改这个，因为会影响模拟扫描循环点击X；
 var t_click_step = 10;      // 循环扫描点击时，每步移这么远再点下一次
-var t_click_x_left = 90;   // 循环扫描点击区域的左边框，到屏幕右边的距离
-var t_click_x_right = 30;   // 循环扫描点击区域的右边框，到屏幕右边的距离
+var t_click_x_left = 60;   // 循环扫描点击区域的左边框，到屏幕右边的距离
+var t_click_x_right = 40;   // 循环扫描点击区域的右边框，到屏幕右边的距离
 var t_click_y_top = 30;     // 循环扫描点击区域的上边框，在closeButtonBottom上方这么多
 var t_click_y_bottom = 40;  // 循环扫描点击区域的下边框，在closeButtonBottom下方这么多
 
@@ -14,7 +14,7 @@ var debug = false; // 开启debug循环
 //setScreenMetrics(1080, 2310);
 console.show();
 auto.waitFor();
-console.setTitle("251201起点自动");
+console.setTitle("251207起点自动");
 console.setSize(device.width / 2, device.width / 2);
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
 setConPos(0); // 控制台放上半，方便对比closeButtonBottom高度
@@ -24,7 +24,7 @@ var qidianPackageName = "com.qidian.QDReader";
 var longdash = "————————————";
 var shortdash = "——————";
 var freeCenterScrolled = 0;
-var adCount = 0, lotteryCount = 0, gamePlayTime = 0;
+var adCount = 0, lotteryCount = 0, exchangeCount = 0, gamePlayTime = 0;
 var ADReceive = new Object();
 // 扫描点击的坐标持久化
 var thisLable = "ysun.QidianFreeCenter";
@@ -174,21 +174,20 @@ function enterFreeCenter() {
     l_info("已进入福利中心");
 }
 function closeDialogs() {
-    if (id("imgClose").exists()) {
-        l_verbose("首页悬浮广告");
+    function c(str, btn) {
+        l_verbose(str);
         sleep(500);
-        id("imgClose").findOne(500).click();
-    }
-    if (id("upgrade_dialog_close_btn").exists()) {
-        l_verbose("升级提醒");
+        btn.click();
         sleep(500);
-        id("upgrade_dialog_close_btn").findOne(500).click();
     }
-    if (textContains("青少年模式").exists && textContains("青少年模式").findOne(500)) {
+    if (id("imgClose").exists()) c("首页悬浮广告", id("imgClose").findOne(500));
+    if (id("btnClose").exists()) c("徽章", id("btnClose").findOne(500));
+    if (id("upgrade_dialog_close_btn").exists()) c("升级提醒", id("upgrade_dialog_close_btn").findOne(500));
+    if (textContains("青少年模式").exists()) {
         l_verbose("青少年模式");
         sleep(500);
         click("我知道了", 0);
-        sleep(1000);
+        sleep(500);
     }
 }
 function lottery() {
@@ -240,10 +239,10 @@ function lottery() {
             }
             if (c) {
                 l_log(c.text());
-                let r = getLotteryReceive(c.parent().child(c.indexInParent() - 1));
+                let r = "";
                 c.click();
                 lotteryCount++;
-                sleep(1000);
+                sleep(800);
                 let n1 = 0;
                 while (n1 < 8) {
                     sleep(1000);
@@ -278,27 +277,37 @@ function lottery() {
             l_verbose(d.text());
             d.click();
             sleep(2000);
-            let num = [30, 20, 15]; // 按钮对应碎片数量
-            for (let n = 0; n < num.length; n++) {
-                let d1 = className("android.widget.TextView").text("".concat(num[n]) + "张碎片兑换").findOne(500);
-                if (d1) {
-                    let p1 = d1.parent().children();
-                    for (let i = 0; i < p1.length; i++) {
-                        if (p1[i].clickable() && p1[i].text() == "兑换") {
-                            l_log(d1.text());
-                            p1[i].click();
-                            sleep(2000);
-                            let p2 = className("android.widget.Button").text("兑换").findOne(500);
-                            l_log(getTextOfView(p2.parent().parent()));
-                            l_verbose(getTextOfView(p2.parent()));
-                            p2.click();
-                            sleep(1000);
-                            if (refreshView(p1[i]).text() != p1[i].text()) {
-                                result |= 0b10;
-                                l_info("兑换成功");
-                            }
-                        }
+            let btns = className("android.widget.TextView").text("兑换").find();
+            if (btns.length > 0) {
+                let bigIndex = -1;
+                let max = 0;
+                for (let i = 0; i < btns.length; i++) {
+                    let t1 = getDescriptionOnLeft(btns[i]);
+                    let n1 = t1.replace(/[^\d]/g, "") * 1;
+                    if (n1 > max) {
+                        bigIndex = i;
+                        max = n1;
                     }
+                }
+                if (bigIndex > -1) {
+                    l_verbose(getDescriptionOnLeft(btns[bigIndex]));
+                    btns[bigIndex].click();
+                    sleep(2000);
+                    let p2 = className("android.widget.Button").text("兑换").findOne(500);
+                    let t1 = getTextOfView(p2.parent());
+                    l_verbose(t1);
+                    p2.click();
+                    exchangeCount++;
+                    sleep(1000);
+                    if (refreshView(btns[bigIndex]).text() != btns[bigIndex].text()) {
+                        let t2 = t1.split("\n")[0];
+                        addReceived(t2.replace("兑换", ""));
+                        showReceived(t2);
+                        result |= 0b10;
+                        l_info("兑换成功");
+                    }
+                } else {
+                    l_warn("有兑换按钮，没找到对应说明");
                 }
             }
         }
@@ -350,6 +359,10 @@ function video_look(btn) {
                         l_log("点：", sec);
                         ad_clicknewpage = sec * 1;
                         break;
+                    } else if (res[i].text.indexOf("玩") > -1) {
+                        l_log("玩：", sec);
+                        ad_clicknewpage = sec * 1;
+                        break;
                     } else if (res[i].text.indexOf("浏览") > -1) {
                         l_log("览：", sec);
                         ad_raw = sec * 1;
@@ -364,7 +377,7 @@ function video_look(btn) {
             }
             if (ad_clicknewpage > -1) {
                 for (let i = 0; i < res.length; i++) {
-                    if (res[i].text.indexOf("点击") > -1) {
+                    if (res[i].text.indexOf("点击") > -1 || res[i].text.indexOf("立即") > -1 || res[i].text.indexOf("查看") > -1) {
                         // 要点击广告的，额外点击一下
                         let b = res[i].bounds;
                         click(parseInt((b.left + b.right) / 2), parseInt((b.top + b.bottom) / 2));
@@ -856,7 +869,10 @@ function getDescriptionOnLeft(b) {
     let c = b.parent().children();
     let r = new Array();
     for (let i = 0; i < c.length; i++) {
-        if (i != j && Math.abs(c[i].bounds().top - t) < 100) r.push(getTextOfView(c[i]));
+        if (i != j && Math.abs(c[i].bounds().top - t) < 100) {
+            let t1 = getTextOfView(c[i]);
+            if (t1 != "") r.push(t1);
+        }
     }
     if (r.length > 0) return r.join("\n");
     return null;
@@ -971,6 +987,11 @@ function reviewResults() {
     if (lotteryCount > 0) {
         r.push("抽奖");
         r.push(lotteryCount);
+        r.push("次\n");
+    }
+    if (exchangeCount > 0) {
+        r.push("兑换");
+        r.push(exchangeCount);
         r.push("次\n");
     }
     if (gamePlayTime > 0) {
