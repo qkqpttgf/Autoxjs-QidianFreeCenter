@@ -1,4 +1,4 @@
-
+var title = "251212起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -14,7 +14,7 @@ var debug = false; // 开启debug循环
 //setScreenMetrics(1080, 2310);
 console.show();
 auto.waitFor();
-console.setTitle("251207起点自动");
+console.setTitle(title);
 console.setSize(device.width / 2, device.width / 2);
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
 setConPos(0); // 控制台放上半，方便对比closeButtonBottom高度
@@ -38,7 +38,7 @@ var logFilePath = files.cwd() + "/log/" + thisLable + "/";
 if (logFile || debug) files.createWithDirs(logFilePath);
 var nickname = "";
 
-l_log("\n\n");
+l_log("\n\n" + title);
 if (auto.service == null) {
     l_error("请先开启无障碍服务！");
     l_exit();
@@ -274,7 +274,8 @@ function lottery() {
         let d = className("android.widget.Button").text("去兑换 今日").findOne(500);
         if (d) {
             // 今日是周日兑换
-            l_verbose(d.text());
+            l_verbose(shortdash);
+            l_log(d.text());
             d.click();
             sleep(2000);
             let btns = className("android.widget.TextView").text("兑换").find();
@@ -301,10 +302,12 @@ function lottery() {
                     sleep(1000);
                     if (refreshView(btns[bigIndex]).text() != btns[bigIndex].text()) {
                         let t2 = t1.split("\n")[0];
-                        addReceived(t2.replace("兑换", ""));
                         showReceived(t2);
+                        addReceived(t2.replace("兑换", ""));
                         result |= 0b10;
                         l_info("兑换成功");
+                    } else {
+                        l_error("似乎兑换失败");
                     }
                 } else {
                     l_warn("有兑换按钮，没找到对应说明");
@@ -376,8 +379,9 @@ function video_look(btn) {
                 }
             }
             if (ad_clicknewpage > -1) {
+                let a1 = ["点击", "立即", "查看"];
                 for (let i = 0; i < res.length; i++) {
-                    if (res[i].text.indexOf("点击") > -1 || res[i].text.indexOf("立即") > -1 || res[i].text.indexOf("查看") > -1) {
+                    if (strHasArr(res[i].text, a1)) {
                         // 要点击广告的，额外点击一下
                         let b = res[i].bounds;
                         click(parseInt((b.left + b.right) / 2), parseInt((b.top + b.bottom) / 2));
@@ -450,8 +454,9 @@ function video_look(btn) {
                 }
                 if (sec > 0) {
                     l_log("续", sec);
+                    let a1 = ["点击", "继续"];
                     for (let i = 0; i < res.length; i++) {
-                        if (res[i].text.indexOf("点击") > -1 || res[i].text.indexOf("继续") > -1) {
+                        if (strHasArr(res[i].text, a1)) {
                             let b = res[i].bounds;
                             click(parseInt((b.left + b.right) / 2), parseInt((b.top + b.bottom) / 2));
                         }
@@ -788,6 +793,10 @@ function launchQidian() {
         sleep(1500);
     }
 }
+function strHasArr(s, a) {
+    for (let i = 0; i < a.length; i++) if (s.indexOf(a[i]) > -1) return true;
+    return false;
+}
 function textButtonExist(str) {
     if (Array.isArray(str)) {
         for (let i = 0; i < str.length; i++) {
@@ -875,7 +884,7 @@ function getDescriptionOnLeft(b) {
         }
     }
     if (r.length > 0) return r.join("\n");
-    return null;
+    return "";
 }
 function showReceived(r) {
     if (r.indexOf("章节卡") > -1 || r.indexOf("点币") > -1 || r.substring(r.length - 1) == "点") l_info(r);
@@ -884,6 +893,11 @@ function showReceived(r) {
 function addReceived(r) {
     r = r.replaceAll(" ", "");
     while (r.substring(0, 1) == "+") r = r.substring(1);
+    if (r.indexOf("满") > -1 && r.indexOf("-") > -1) {
+        let t = r.split("-");
+        t[0] = t[0].replace(/[^\d]/g, "");
+        r = t.join("-");
+    }
     if (r in ADReceive) ADReceive[r]++;
     else ADReceive[r] = 1;
 }
@@ -1054,14 +1068,8 @@ do {
         targetNum += aa.length;
         for (let ii = aa.length - 1; ii > -1; ii--) {
             //l_verbose(target);
-            let f = false;
             let s = getDescriptionOnLeft(aa[ii]);
-            if (s) {
-                expstring.forEach(e => {
-                    if (s.indexOf(e) > -1) f = true;
-                });
-            }
-            if (f) {
+            if (strHasArr(s, expstring)) {
                 targetFalse++;
             } else {
                 freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
