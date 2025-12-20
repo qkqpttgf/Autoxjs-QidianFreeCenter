@@ -1,4 +1,4 @@
-var title = "251212起点自动";
+var title = "251220起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -358,7 +358,7 @@ function video_look(btn) {
                 if (res[i].text.indexOf("可获得奖励") > -1) {
                     //log(i, res[i].text);
                     let sec = res[i].text.replace(/[^\d]/g, "");
-                    if (res[i].text.indexOf("点击广告") > -1) {
+                    if (res[i].text.indexOf("点击") > -1) {
                         l_log("点：", sec);
                         ad_clicknewpage = sec * 1;
                         break;
