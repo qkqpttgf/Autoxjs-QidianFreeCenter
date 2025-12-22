@@ -1,4 +1,4 @@
-var title = "251220起点自动";
+var title = "251222起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -180,15 +180,15 @@ function closeDialogs() {
         btn.click();
         sleep(500);
     }
-    if (id("imgClose").exists()) c("首页悬浮广告", id("imgClose").findOne(500));
-    if (id("btnClose").exists()) c("徽章", id("btnClose").findOne(500));
-    if (id("upgrade_dialog_close_btn").exists()) c("升级提醒", id("upgrade_dialog_close_btn").findOne(500));
     if (textContains("青少年模式").exists()) {
         l_verbose("青少年模式");
         sleep(500);
         click("我知道了", 0);
         sleep(500);
     }
+    if (id("upgrade_dialog_close_btn").exists()) c("升级提醒", id("upgrade_dialog_close_btn").findOne(500));
+    if (id("btnClose").exists()) c("徽章", id("btnClose").findOne(500));
+    if (id("imgClose").exists()) c("首页悬浮广告", id("imgClose").findOne(500));
 }
 function lottery() {
     let result = 0;
@@ -204,8 +204,10 @@ function lottery() {
             sleep(2000);
             let b = className("android.widget.Button").text("领奖励").findOne(500);
             if (b) { // 连签礼
+                l_log(b.text());
                 b.click();
                 sleep(1000);
+                clickIknown();
             }
             scrollShowButton(device.height, 0); // 进入后它会自动向下滚，滚回
             sleep(500);
@@ -324,6 +326,7 @@ function video_look(btn) {
     l_verbose("广告", adCount, "开始");
     let ad_raw = -1, ad_clicknewpage = -1; // 生页面、 要再点击一下的页面
     let m = 0;
+    let a1 = ["点击", "立即", "查看", "继续", "下载", "更多"];
     do {
         l_verbose("缓冲……");
         sleep(1000);
@@ -331,7 +334,7 @@ function video_look(btn) {
         if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
         if (wherePage() == "index") {
             l_warn("似乎跳首页了，请限制左边有某些词的时候不要点这个按钮");
-            l_exit();
+            throw new Error("跳首页");
         }
         if (textContains("验证").exists()) {
             let c1 = 0;
@@ -346,7 +349,7 @@ function video_look(btn) {
             m = 0;
         } else if (m > 2 && !!btn.parent()) {
             l_error("似乎没有点到，或没有跳转");
-            l_exit();
+            throw new Error("未跳转");
         }
         m++;
         if (m > 2) {
@@ -379,7 +382,6 @@ function video_look(btn) {
                 }
             }
             if (ad_clicknewpage > -1) {
-                let a1 = ["点击", "立即", "查看"];
                 for (let i = 0; i < res.length; i++) {
                     if (strHasArr(res[i].text, a1)) {
                         // 要点击广告的，额外点击一下
@@ -431,7 +433,7 @@ function video_look(btn) {
                     if (xc < device.width - t_click_x_left) {
                         l_error("没点到，放弃");
                         l_warn("请编辑代码前几行，扩大循环点击扫描的范围，试出点击坐标后，再缩小范围。");
-                        l_exit();
+                        throw new Error("请扩大扫描范围");
                     }
                     l_verbose("扫描", xc, yc);
                     click(xc, yc);
@@ -454,7 +456,6 @@ function video_look(btn) {
                 }
                 if (sec > 0) {
                     l_log("续", sec);
-                    let a1 = ["点击", "继续"];
                     for (let i = 0; i < res.length; i++) {
                         if (strHasArr(res[i].text, a1)) {
                             let b = res[i].bounds;
@@ -472,6 +473,7 @@ function video_look(btn) {
                 if (t2 > 0) sleep(t2);
             } else {
                 sleep(1000);
+                if (className("android.widget.TextView").textContains("恭喜").exists()) break;
             }
         } while (!btn.parent());
 
@@ -609,7 +611,7 @@ function video_look(btn) {
                 back();
             } else {
                 l_error("未知原因退出失败");
-                l_exit();
+                throw new Error("退出失败");
             }
             sleep(1000);
         } while (!btn.parent());
@@ -994,7 +996,7 @@ function reviewResults() {
     r.push(nickname.concat("\n"));
     r.push("本次总用时" + formatTime(new Date().getTime() - startTime) + "\n");
     if (adCount > 0) {
-        r.push("共看");
+        r.push("看");
         r.push(adCount);
         r.push("个广告\n");
     }
@@ -1040,7 +1042,6 @@ if (debug) {
     );
 }
 
-
 //home();
 //sleep(900);
 
@@ -1054,139 +1055,144 @@ enterFreeCenter();
 l_log(longdash);
 sleep(2000);
 
-// 开始看广告
-l_log("开始看广告");
-let targets = ["看视频", "去完成"]; // 目标按钮字符
-let expstring = ["白泽宇航员", "玩游戏", "更新提醒", "推送通知", "充值", "携程"]; // 目标按钮左边如果有这些字，跳过
-do {
-    let targetNum = 0, targetFalse = 0;
-    for (let i = 0; i < targets.length; i++) {
-        let target = targets[i];
-        if (!text(target).exists()) continue;
-
-        let aa = text(target).find();
-        targetNum += aa.length;
-        for (let ii = aa.length - 1; ii > -1; ii--) {
-            //l_verbose(target);
-            let s = getDescriptionOnLeft(aa[ii]);
-            if (strHasArr(s, expstring)) {
-                targetFalse++;
-            } else {
-                freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
-                l_verbose(shortdash);
-                l_log(s);
-                aa[ii].click();
-                sleep(1000);
-                video_look(aa[ii]);
-                break; // 不然会先按下面的，刚刚按过现在又亮起来的会下次循环按
-            }
-        }
-    }
-    if (targetFalse == targetNum) break;
-} while (textButtonExist(targets));
-if (Object.keys(t_click).length > 0) storage.put(closeCoord_name, JSON.stringify(t_click));
-if (adCount > 0) {
-    l_verbose(shortdash);
-    l_info("结束看广告");
-} else {
-    l_log("无广告");
-}
-freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
-l_log(longdash);
-sleep(2000);
-
-// 签到里面的抽奖、兑换
-l_log("开始抽奖");
-let result = lottery();
-if (result == 0) l_log("无抽奖");
-l_log(longdash);
-sleep(2000);
-
-// 其它脚本里的听书等活动，快一年了还没有，先删
-
-// 玩游戏
-let gamebtntext = "去完成"; // 按钮字符
-let gameremain = "再玩"; // 有这个字符，进入玩游戏
-if (textContains(gameremain).exists()) {
-    l_log("开始玩游戏");
-    let playLabel = textContains(gameremain).findOne(500);
-    freeCenterScrolled = scrollShowButton(freeCenterScrolled, playLabel);
-    let num = 0;
+try {
+    // 开始看广告
+    l_log("开始看广告");
+    let targets = ["看视频", "去完成"]; // 目标按钮字符
+    let expstring = ["白泽宇航员", "玩游戏", "更新提醒", "推送通知", "充值", "携程"]; // 目标按钮左边如果有这些字，跳过
     do {
-        if (num > 5) {
-            l_error("已经循环5次了，可能哪里判定不太对，先退出");
-            break;
-        }
-        playLabel = textContains(gameremain).findOne(500);
-        let b = null;
-        let aa = text(gamebtntext).find();
-        for (let i = 0; i < aa.length; i++) {
-            let s = getDescriptionOnLeft(aa[i]);
-            if (s && s.indexOf(gameremain) > -1) {
-                b = aa[i];
-                break;
-            }
-        }
-        if (b != null) {
-            l_log(playLabel.text());
-            let min = playLabel.text().replace(/[^\d]/g, "");
-            b.click();
-            sleep(5000);
-            let res = game_play(min);
-            sleep(2000);
-            if (wherePage() == "gamecenter") back();
-            sleep(3000);
-            if (res != 0) break;
-        } else {
-            l_error("没找到对应的“" + gamebtntext + "”按钮，可能起点改了布局或按钮字符");
-        }
-        num++;
-        sleep(1000);
-    } while (textContains(gameremain).exists());
-    l_info("结束玩游戏");
-    freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
-    l_log(longdash);
-    sleep(1000);
-}
+        let targetNum = 0, targetFalse = 0;
+        for (let i = 0; i < targets.length; i++) {
+            let target = targets[i];
+            if (!text(target).exists()) continue;
 
-// 领游戏与看书时长的
-l_log("有无可领");
-let bonusButtonTexts = ["领奖励", "领积分"];
-let bonusNum = 0;
-bonusButtonTexts.forEach(btnt => {
-    if (text(btnt).exists()) {
-        let btn = text(btnt).find();
-        for (let i = 0; i < btn.length; i++) {
-            l_verbose(shortdash);
-            freeCenterScrolled = scrollShowButton(freeCenterScrolled, btn[i]);
-            let btn_now = refreshView(btn[i]);
-            l_verbose(getDescriptionOnLeft(btn_now));
-            btn_now.click();
-            bonusNum++;
-            sleep(1500);
-            if (!clickIknown()) {
-                btn_now = refreshView(btn[i]);
-                if (btn_now.text() == btnt) {
-                    l_error("似乎领取失败");
+            let aa = text(target).find();
+            targetNum += aa.length;
+            for (let ii = aa.length - 1; ii > -1; ii--) {
+                //l_verbose(target);
+                let s = getDescriptionOnLeft(aa[ii]);
+                if (strHasArr(s, expstring)) {
+                    targetFalse++;
                 } else {
-                    let d1 = getDescriptionOnLeft(btn_now).split("\n");
-                    d1.shift();
-                    l_log(d1.join("\n"));
+                    freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
+                    l_verbose(shortdash);
+                    l_log(s);
+                    aa[ii].click();
+                    sleep(1000);
+                    video_look(aa[ii]);
+                    break; // 不然会先按下面的，刚刚按过现在又亮起来的会下次循环按
                 }
             }
         }
+        if (targetFalse == targetNum) break;
+    } while (textButtonExist(targets));
+    if (Object.keys(t_click).length > 0) storage.put(closeCoord_name, JSON.stringify(t_click));
+    if (adCount > 0) {
+        l_verbose(shortdash);
+        l_info("结束看广告");
+    } else {
+        l_log("无广告");
     }
-});
-if (bonusNum == 0) l_log("无");
-l_log(longdash);
-sleep(1000);
+    freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
+    l_log(longdash);
+    sleep(2000);
 
-l_log.apply(null, reviewResults());
-l_info("脚本已结束");
-l_log("记得清理auto.js后台");
-l_verbose("控制台3秒后自动关闭");
-threads.shutDownAll();
-sleep(3000);
-console.hide();
-engines.stopAllAndToast();
-l_exit();
+    // 签到里面的抽奖、兑换
+    l_log("开始抽奖");
+    let result = lottery();
+    if (result == 0) l_log("无抽奖");
+    l_log(longdash);
+    sleep(2000);
+
+    // 其它脚本里的听书等活动，快一年了还没有，先删
+
+    // 玩游戏
+    let gamebtntext = "去完成"; // 按钮字符
+    let gameremain = "再玩"; // 有这个字符，进入玩游戏
+    if (textContains(gameremain).exists()) {
+        l_log("开始玩游戏");
+        let playLabel = textContains(gameremain).findOne(500);
+        freeCenterScrolled = scrollShowButton(freeCenterScrolled, playLabel);
+        let num = 0;
+        do {
+            if (num > 5) {
+                l_error("已经循环5次了，可能哪里判定不太对，先退出");
+                break;
+            }
+            playLabel = textContains(gameremain).findOne(500);
+            let b = null;
+            let aa = text(gamebtntext).find();
+            for (let i = 0; i < aa.length; i++) {
+                let s = getDescriptionOnLeft(aa[i]);
+                if (s && s.indexOf(gameremain) > -1) {
+                    b = aa[i];
+                    break;
+                }
+            }
+            if (b != null) {
+                l_log(playLabel.text());
+                let min = playLabel.text().replace(/[^\d]/g, "");
+                b.click();
+                sleep(5000);
+                let res = game_play(min);
+                sleep(2000);
+                if (wherePage() == "gamecenter") back();
+                sleep(3000);
+                if (res != 0) break;
+            } else {
+                l_error("没找到对应的“" + gamebtntext + "”按钮，可能起点改了布局或按钮字符");
+            }
+            num++;
+            sleep(1000);
+        } while (textContains(gameremain).exists());
+        l_info("结束玩游戏");
+        freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
+        l_log(longdash);
+        sleep(1000);
+    }
+
+    // 领游戏与看书时长的
+    l_log("有无可领");
+    let bonusButtonTexts = ["领奖励", "领积分"];
+    let bonusNum = 0;
+    bonusButtonTexts.forEach(btnt => {
+        if (text(btnt).exists()) {
+            let btn = text(btnt).find();
+            for (let i = 0; i < btn.length; i++) {
+                l_verbose(shortdash);
+                freeCenterScrolled = scrollShowButton(freeCenterScrolled, btn[i]);
+                let btn_now = refreshView(btn[i]);
+                l_verbose(getDescriptionOnLeft(btn_now));
+                btn_now.click();
+                bonusNum++;
+                sleep(1500);
+                if (!clickIknown()) {
+                    btn_now = refreshView(btn[i]);
+                    if (btn_now.text() == btnt) {
+                        l_error("似乎领取失败");
+                    } else {
+                        let d1 = getDescriptionOnLeft(btn_now).split("\n");
+                        d1.shift();
+                        l_log(d1.join("\n"));
+                    }
+                }
+            }
+        }
+    });
+    if (bonusNum == 0) l_log("无");
+    l_log(longdash);
+    sleep(1000);
+} catch (err) {
+    l_error(err.message);
+    l_warn(err.stack);
+} finally {
+    l_log.apply(null, reviewResults());
+    l_info("脚本已结束");
+    l_log("记得清理auto.js后台");
+    l_verbose("控制台3秒后自动关闭");
+    threads.shutDownAll();
+    sleep(3000);
+    console.hide();
+    engines.stopAllAndToast();
+    l_exit();
+}
