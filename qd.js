@@ -1,4 +1,4 @@
-var title = "251222起点自动";
+var title = "260104起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -88,7 +88,7 @@ function openQidian() {
         }
         sleep(1000);
         closeDialogs();
-        if (n > 15 && currentPackage() != qidianPackageName) break;
+        if (n > 20 && currentPackage() != qidianPackageName) break;
     } while (wherePage() != "index");
     sleep(600);
 
@@ -176,9 +176,9 @@ function enterFreeCenter() {
 function closeDialogs() {
     function c(str, btn) {
         l_verbose(str);
-        sleep(500);
+        sleep(800);
         btn.click();
-        sleep(500);
+        sleep(800);
     }
     if (textContains("青少年模式").exists()) {
         l_verbose("青少年模式");
@@ -299,9 +299,10 @@ function lottery() {
                     let p2 = className("android.widget.Button").text("兑换").findOne(500);
                     let t1 = getTextOfView(p2.parent());
                     l_verbose(t1);
+                    sleep(1000);
                     p2.click();
                     exchangeCount++;
-                    sleep(1000);
+                    sleep(2000);
                     if (refreshView(btns[bigIndex]).text() != btns[bigIndex].text()) {
                         let t2 = t1.split("\n")[0];
                         showReceived(t2);
@@ -321,12 +322,17 @@ function lottery() {
     }
     return result;
 }
+function jumpMarket(btn) {
+    sleep(1000);
+    launchQidian();
+    if (refreshView(btn).text() == btn.text()) l_warn("可能没跳转市场，\n或判断出错，并不是要跳转市场");
+}
 function video_look(btn) {
     adCount++;
     l_verbose("广告", adCount, "开始");
     let ad_raw = -1, ad_clicknewpage = -1; // 生页面、 要再点击一下的页面
     let m = 0;
-    let a1 = ["点击", "立即", "查看", "继续", "下载", "更多"];
+    let a1 = ["点击", "立即", "查看", "继续", "下载", "了解", "更多", "详情"];
     do {
         l_verbose("缓冲……");
         sleep(1000);
@@ -1079,7 +1085,8 @@ try {
                     l_log(s);
                     aa[ii].click();
                     sleep(1000);
-                    video_look(aa[ii]);
+                    if (s.indexOf("市场") > -1) jumpMarket(aa[ii]);
+                    else video_look(aa[ii]);
                     break; // 不然会先按下面的，刚刚按过现在又亮起来的会下次循环按
                 }
             }
@@ -1173,7 +1180,7 @@ try {
                     } else {
                         let d1 = getDescriptionOnLeft(btn_now).split("\n");
                         d1.shift();
-                        l_log(d1.join("\n"));
+                        l_verbose(d1.join("\n"));
                     }
                 }
             }
