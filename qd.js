@@ -1,4 +1,4 @@
-var title = "260104起点自动";
+var title = "260113起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -24,7 +24,7 @@ var qidianPackageName = "com.qidian.QDReader";
 var longdash = "————————————";
 var shortdash = "——————";
 var freeCenterScrolled = 0;
-var adCount = 0, lotteryCount = 0, exchangeCount = 0, gamePlayTime = 0;
+var adCount = 0, lotteryCount = 0, exchangeCount = 0, readTime = 0, gamePlayTime = 0;
 var ADReceive = new Object();
 // 扫描点击的坐标持久化
 var thisLable = "ysun.QidianFreeCenter";
@@ -332,7 +332,7 @@ function video_look(btn) {
     l_verbose("广告", adCount, "开始");
     let ad_raw = -1, ad_clicknewpage = -1; // 生页面、 要再点击一下的页面
     let m = 0;
-    let a1 = ["点击", "立即", "查看", "继续", "下载", "了解", "更多", "详情"];
+    let a1 = ["点击", "立即", "查看", "继续", "下载", "了解", "更多", "详情", "去"];
     do {
         l_verbose("缓冲……");
         sleep(1000);
@@ -627,8 +627,37 @@ function video_look(btn) {
     l_verbose("广告", adCount, "结束");
     sleep(1000);
 }
+function read_book(min) {
+    let second = min * 60;
+    let st = new Date().getTime();
+    for (let i = 0; i < 2; i++) {
+        // 确保进正文
+        swipe(device.width - 100 + i, device.height / 2 + 105 + i, 100, device.height / 2 + 100 + i, 500);
+        sleep(900);
+    }
+    let n = 0;
+    do {
+        let a = 1000, b = 500;
+        if (second % 60 == 0) {
+            l_verbose("倒计时" + (second / 60) + "分钟");
+        }
+        if (second % 10 == 0) {
+            if (n % 2 == 1) swipe(100, device.height / 2 + 100, device.width - 100, device.height / 2 + 105, b);
+            else swipe(device.width - 100, device.height / 2 + 105, 100, device.height / 2 + 100, b);
+            a = a - b;
+            n++;
+        }
+        sleep(a);
+        second--;
+    } while (second > -2);
+    l_verbose("时间到");
+    readTime += new Date().getTime() - st;
+    sleep(500);
+    back();
+    sleep(2000);
+}
 function game_play(min) {
-    second = min * 60;
+    let second = min * 60;
     swipe(device.width - 50, device.height / 3, device.width - 55, device.height / 2, 900);
     let num = 0;
     let thread = threads.start(
@@ -698,6 +727,7 @@ function setConPos(n) {
     console.setPosition(c_pos[n][0], c_pos[n][1]);
 }
 function l_exit() {
+    debugDelay = -1;
     threads.shutDownAll();
     l_warn("退出");
     exit();
@@ -1016,6 +1046,9 @@ function reviewResults() {
         r.push(exchangeCount);
         r.push("次\n");
     }
+    if (readTime > 0) {
+        r.push("阅读 " + formatTime(readTime) + "\n");
+    }
     if (gamePlayTime > 0) {
         r.push("玩游戏 " + formatTime(gamePlayTime) + "\n");
     }
@@ -1035,7 +1068,7 @@ if (debug) {
     debugLoop = threads.start(
         function t() {
             let n = 0;
-            while (1) {
+            while (debugDelay > 0) {
                 sleep(1000);
                 n++;
                 if (n >= debugDelay) {
@@ -1071,7 +1104,6 @@ try {
         for (let i = 0; i < targets.length; i++) {
             let target = targets[i];
             if (!text(target).exists()) continue;
-
             let aa = text(target).find();
             targetNum += aa.length;
             for (let ii = aa.length - 1; ii > -1; ii--) {
@@ -1112,6 +1144,63 @@ try {
     sleep(2000);
 
     // 其它脚本里的听书等活动，快一年了还没有，先删
+
+    // 当日阅读5分钟
+    let target1 = ["去阅读"]; // 目标按钮字符
+    let expstr1 = ["当日阅读"]; // 目标按钮左边有这些字
+    for (let i = 0; i < target1.length; i++) {
+        let target = target1[i];
+        if (!text(target).exists()) continue;
+        let aa = text(target).find();
+        for (let ii = aa.length - 1; ii > -1; ii--) {
+            //l_verbose(target);
+            let s = getDescriptionOnLeft(aa[ii]);
+            if (strHasArr(s, expstr1)) {
+                freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
+                aa[ii] = refreshView(aa[ii]);
+                do {
+                    s = getDescriptionOnLeft(aa[ii]);
+                    l_log(s);
+                    let s1 = s.split("\n");
+                    let num = 0;
+                    for (let j = 0; j < s1.length; j++) if (s1[j].indexOf("再读") > -1) num = s1[j].replace(/[^\d]/g, "");
+                    aa[ii].click();
+                    sleep(2000);
+                    let b = text(target).find();
+                    for (let j = 0; j < b.length; j++) {
+                        if (b[j].parent().clickable() && !b[j].clickable()) {
+                            l_verbose(getTextOfView(b[j].parent(), b[j]));
+                            b[j].parent().click();
+                            sleep(1000);
+                            read_book(num);
+                            while (!aa[ii].parent()) {
+                                l_verbose("还未返回");
+                                if (text("加入书架").exists() && text("取消").exists()) {
+                                    let c = text("取消").findOne(500);
+                                    l_verbose(c.text());
+                                    if (c) {
+                                        c.click(); // 不能点
+                                        c.parent().click();
+                                    }
+                                    //back();
+                                } else {
+                                    l_verbose("但无 加入 弹窗");
+                                }
+                                sleep(2000);
+                            }
+                            break;
+                        }
+                    }
+                    l_verbose(shortdash);
+                    sleep(3000);
+                } while (refreshView(aa[ii]).text() == aa[ii].text());
+                l_info("结束阅读");
+                freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
+                l_log(longdash);
+                sleep(2000);
+            }
+        }
+    }
 
     // 玩游戏
     let gamebtntext = "去完成"; // 按钮字符
@@ -1197,7 +1286,6 @@ try {
     l_info("脚本已结束");
     l_log("记得清理auto.js后台");
     l_verbose("控制台3秒后自动关闭");
-    threads.shutDownAll();
     sleep(3000);
     console.hide();
     engines.stopAllAndToast();
