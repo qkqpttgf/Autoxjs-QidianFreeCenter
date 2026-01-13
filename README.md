@@ -1,5 +1,6 @@
 
 使用了paddle ocr识别，所以要 Autox.js v7 ( https://github.com/aiselp/AutoX ) 。  
+测试环境：Autox.js v7: 7.1.7、 起点读书: 7.9.430  
 
 参考 https://www.52pojie.cn/thread-1820936-1-1.html  
 与 https://www.52pojie.cn/thread-2057144-1-1.html 。  
