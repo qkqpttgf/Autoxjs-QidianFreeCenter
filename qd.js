@@ -1,4 +1,4 @@
-var title = "260113起点自动";
+var title = "260121起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -71,6 +71,7 @@ function openQidian() {
             // com.qidian.QDReader.ui.activity.SplashADActivity
             // com.qidian.QDReader.ui.activity.SplashImageActivity
             l_verbose("开屏广告");
+            n = 0;
         } else if (a.indexOf("activity.QDReader") > -1) {
             l_verbose("阅读界面");
             back();
@@ -119,17 +120,19 @@ function enterMe() {
         //方案三
         click(device.width - 100, device.height - 100);
     }
-    sleep(1000);
-    launchQidian();
-    closeDialogs();
-    if (id("tvName").exists() || id("userInfo").exists()) {// || text("福利中心").exists()
+    do {
+        sleep(1000);
+        launchQidian();
+        closeDialogs();
+    } while (!text("福利中心").exists());
+    if (id("tvName").exists() || id("userInfo").exists()) {
         //l_log("成功打开“我”");
         nickname = id("tvName").findOne(500).text();
         l_log("当前账号：", nickname);
         sleep(1000);
         return true;
     }
-    l_warn("似乎未成功打开“我”");
+    l_warn("未找到昵称，可能版本不一样");
     l_warn(wherePage(), currentPackage(), currentActivity());
     return false;
 }
@@ -332,7 +335,7 @@ function video_look(btn) {
     l_verbose("广告", adCount, "开始");
     let ad_raw = -1, ad_clicknewpage = -1; // 生页面、 要再点击一下的页面
     let m = 0;
-    let a1 = ["点击", "立即", "查看", "继续", "下载", "了解", "更多", "详情", "去"];
+    let a1 = ["点击", "立即", "查看", "继续", "下载", "了解", "更多", "详情", "领取", "去"];
     do {
         l_verbose("缓冲……");
         sleep(1000);
@@ -353,12 +356,14 @@ function video_look(btn) {
             }
             if (c1 > 0) setConPos(0);
             m = 0;
-        } else if (m > 2 && !!btn.parent()) {
-            l_error("似乎没有点到，或没有跳转");
-            throw new Error("未跳转");
         }
+        //else if (m > 2 && !!btn.parent()) {
+        //    l_error("似乎没有点到，或没有跳转");
+        //    throw new Error("未跳转");
+        //}
         m++;
         if (m > 2) {
+            if (currentActivity() != "com.qq.e.tg.RewardvideoPortraitADActivity") btn.click();
             //    l_verbose("尝试截图OCR");
             let capimg = captureScreen();
             //capimg = images.clip(capimg, 0, 0, device.width, closeButtonBottom);
@@ -409,11 +414,13 @@ function video_look(btn) {
         // 新广告
         let sec = ad_clicknewpage;
         if (sec == -1) sec = ad_raw;
+        debugDelay = 3;
         while (sec > 0) {
             sleep(1000);
             sec--;
         }
         l_verbose("应该看完");
+        debugDelay = 1;
         sleep(1000);
 
         // 看完点X
@@ -425,6 +432,7 @@ function video_look(btn) {
             n++;
             launchQidian();
 
+            if (currentActivity() == "com.qq.e.tg.ADActivity") n = 0;
             if (n < try_back_time + 1) {
                 // 有些旧版本，或手机没装应该跳的app，可能有用
                 l_verbose("尝试模拟“手势返回”");
@@ -468,11 +476,13 @@ function video_look(btn) {
                             click(parseInt((b.left + b.right) / 2), parseInt((b.top + b.bottom) / 2));
                         }
                     }
+                    debugDelay = 3;
                     while (sec > 0) {
                         sleep(1000);
                         sec--;
                     }
                     l_verbose("应该看完");
+                    debugDelay = 1;
                     n = 0;
                 }
                 let t2 = 1000 - (new Date() - t1);
@@ -632,26 +642,28 @@ function read_book(min) {
     let st = new Date().getTime();
     for (let i = 0; i < 2; i++) {
         // 确保进正文
-        swipe(device.width - 100 + i, device.height / 2 + 105 + i, 100, device.height / 2 + 100 + i, 500);
+        swipe(device.width * 3 / 4 + i, device.height / 2 + 105 + i, device.width / 4 + i, device.height / 2 + 100 + i, 500);
         sleep(900);
     }
+    debugDelay = 30;
     let n = 0;
     do {
-        let a = 1000, b = 500;
+        let a = 1000, b = 0;
         if (second % 60 == 0) {
             l_verbose("倒计时" + (second / 60) + "分钟");
         }
-        if (second % 10 == 0) {
-            if (n % 2 == 1) swipe(100, device.height / 2 + 100, device.width - 100, device.height / 2 + 105, b);
-            else swipe(device.width - 100, device.height / 2 + 105, 100, device.height / 2 + 100, b);
-            a = a - b;
+        if (second % 15 == 0) {
+            b = 400;
+            if (n % 2 == 1) swipe(device.width / 4, device.height / 2 + 100, device.width * 3 / 4, device.height / 2 + 105, b);
+            else swipe(device.width * 3 / 4, device.height / 2 + 105, device.width / 4, device.height / 2 + 100, b);
             n++;
         }
-        sleep(a);
+        sleep(a - b);
         second--;
     } while (second > -2);
     l_verbose("时间到");
     readTime += new Date().getTime() - st;
+    debugDelay = 1;
     sleep(500);
     back();
     sleep(2000);
@@ -689,7 +701,7 @@ function game_play(min) {
         l_log("在线玩");
         sleep(2000);
     }
-    if (wherePage() == "browser") l_info("应该打开游戏了");
+    if (wherePage() == "browser") l_info("应该直接打开游戏了");
     l_verbose(shortdash);
     sleep(1000);
 
@@ -960,6 +972,11 @@ function clickIknown() {
     return 0;
 }
 function sortFormatReceive() {
+    function rmBracket(s) {
+        if (s.substr(-1) == ")") s = s.substring(0, s.lastIndexOf("("));
+        if (s.substr(-1) == "）") s = s.substring(0, s.lastIndexOf("（"));
+        return s;
+    }
     function indexLastNum(str) {
         for (let i = str.length - 1; i > 0; i--) {
             let n = str.substring(i - 1, i) * 1;
@@ -976,10 +993,11 @@ function sortFormatReceive() {
     }
     let s = new Object();
     Object.keys(ADReceive).forEach(k => {
-        let p = indexLastNum(k);
+        k1 = rmBracket(k);
+        let p = indexLastNum(k1);
         let a1 = "";
-        if (p < 0) a1 = k;
-        else a1 = "0" + k.substring(p);
+        if (p < 0) a1 = k1;
+        else a1 = "0" + k1.substring(p);
         if (!(a1 in s)) s[a1] = new Object();
         s[a1][k] = ADReceive[k];
     });
@@ -990,6 +1008,8 @@ function sortFormatReceive() {
     }
     Object.keys(s).forEach(k => {
         let t = Object.keys(s[k]).sort((a, b) => {
+            a = rmBracket(a);
+            b = rmBracket(b);
             let p1 = indexLastNum(a);
             let p2 = indexLastNum(b);
             if (p1 < 0) return 1;
@@ -1067,14 +1087,17 @@ var debugLoop = null;
 if (debug) {
     debugLoop = threads.start(
         function t() {
-            let n = 0;
+            let n = 0, a = 1000, b = 0;
             while (debugDelay > 0) {
-                sleep(1000);
+                if (b < a) sleep(a - b);
+                b = 0;
                 n++;
                 if (n >= debugDelay) {
+                    let st = new Date().getTime();
                     let p = currentPackage();
                     writeLog(p, getAppName(p), currentActivity(), wherePage());
                     n = 0;
+                    b = new Date().getTime() - st;
                 }
             }
         }
@@ -1175,6 +1198,7 @@ try {
                             read_book(num);
                             while (!aa[ii].parent()) {
                                 l_verbose("还未返回");
+                                // com.qd.ui.component.widget.dialog.QDUICommonTipDialog
                                 if (text("加入书架").exists() && text("取消").exists()) {
                                     let c = text("取消").findOne(500);
                                     l_verbose(c.text());
@@ -1284,7 +1308,7 @@ try {
 } finally {
     l_log.apply(null, reviewResults());
     l_info("脚本已结束");
-    l_log("记得清理auto.js后台");
+    l_log("记得清理Autox.js后台");
     l_verbose("控制台3秒后自动关闭");
     sleep(3000);
     console.hide();
