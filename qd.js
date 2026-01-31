@@ -1121,7 +1121,7 @@ try {
     // 开始看广告
     l_log("开始看广告");
     let targets = ["看视频", "去完成"]; // 目标按钮字符
-    let expstring = ["白泽宇航员", "玩游戏", "更新提醒", "推送通知", "充值", "携程"]; // 目标按钮左边如果有这些字，跳过
+    let expstring = ["白泽宇航员", "玩游戏", "更新提醒", "推送通知", "充值", "携程", "小组件"]; // 目标按钮左边如果有这些字，跳过
     do {
         let targetNum = 0, targetFalse = 0;
         for (let i = 0; i < targets.length; i++) {
