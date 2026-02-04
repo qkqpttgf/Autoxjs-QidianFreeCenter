@@ -369,7 +369,7 @@ function video_look(btn) {
             //capimg = images.clip(capimg, 0, 0, device.width, closeButtonBottom);
             let res = paddle.ocr(capimg);
             for (let i = 0; i < res.length; i++) {
-                if (res[i].text.indexOf("可获得奖励") > -1) {
+                if (res[i].text.indexOf("获得奖励") > -1 || res[i].text.indexOf("小游戏") > -1) {
                     //log(i, res[i].text);
                     let sec = res[i].text.replace(/[^\d]/g, "");
                     if (res[i].text.indexOf("点击") > -1) {
