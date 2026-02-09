@@ -11,7 +11,7 @@ var t_click_y_bottom = 40;  // 循环扫描点击区域的下边框，在closeBu
 
 var startTime = new Date().getTime();
 var t_click = new Object(); // 用于存储扫描点击成功的坐标
-var debug = true; // 开启debug循环
+var debug = false; // 开启debug循环
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
 var qidianPackageName = "com.qidian.QDReader";
 var longdash = "————————————";
