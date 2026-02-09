@@ -1,4 +1,4 @@
-var title = "260121起点自动";
+var title = "260205起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -9,17 +9,10 @@ var t_click_x_right = 40;   // 循环扫描点击区域的右边框，到屏幕�
 var t_click_y_top = 30;     // 循环扫描点击区域的上边框，在closeButtonBottom上方这么多
 var t_click_y_bottom = 40;  // 循环扫描点击区域的下边框，在closeButtonBottom下方这么多
 
-var t_click = new Object(); // 用于存储扫描点击成功的坐标
-var debug = false; // 开启debug循环
-//setScreenMetrics(1080, 2310);
-console.show();
-auto.waitFor();
-console.setTitle(title);
-console.setSize(device.width / 2, device.width / 2);
-var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
-setConPos(0); // 控制台放上半，方便对比closeButtonBottom高度
 var startTime = new Date().getTime();
-
+var t_click = new Object(); // 用于存储扫描点击成功的坐标
+var debug = true; // 开启debug循环
+var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
 var qidianPackageName = "com.qidian.QDReader";
 var longdash = "————————————";
 var shortdash = "——————";
@@ -38,6 +31,9 @@ var logFilePath = files.cwd() + "/log/" + thisLable + "/";
 if (logFile || debug) files.createWithDirs(logFilePath);
 var nickname = "";
 
+//setScreenMetrics(1080, 2310);
+auto.waitFor();
+showCon();
 l_log("\n\n" + title);
 if (auto.service == null) {
     l_error("请先开启无障碍服务！");
@@ -58,6 +54,7 @@ try {
     l_exit();
 }
 console.verbose("建议Autox.js开启“稳定模式”、“前台服务”。");
+console.verbose("建议重启手机或清理手机后再运行。");
 l_log(longdash);
 
 function openQidian() {
@@ -120,10 +117,13 @@ function enterMe() {
         //方案三
         click(device.width - 100, device.height - 100);
     }
+    let n = 15;
     do {
         sleep(1000);
         launchQidian();
         closeDialogs();
+        n--;
+        if (n < 0) return false;
     } while (!text("福利中心").exists());
     if (id("tvName").exists() || id("userInfo").exists()) {
         //l_log("成功打开“我”");
@@ -193,38 +193,98 @@ function closeDialogs() {
     if (id("btnClose").exists()) c("徽章", id("btnClose").findOne(500));
     if (id("imgClose").exists()) c("首页悬浮广告", id("imgClose").findOne(500));
 }
+function exchange() {
+    let result = 0;
+    let e = className("android.widget.ListView").findOne(500);
+    if (e.parent().clickable()) {
+        freeCenterScrolled = scrollShowButton(freeCenterScrolled, e);
+        e.parent().click();
+        l_verbose("点进签到日历");
+        sleep(2000);
+        scrollShowButton(device.height, 0); // 进入后它会自动向下滚，滚回
+        sleep(500);
+    } else {
+        l_error("没找到链接，无法进入签到日历");
+    }
+    let d = className("android.widget.Button").text("去兑换 今日").findOne(500);
+    if (d) {
+        // 今日是周日兑换
+        l_verbose(shortdash);
+        l_log(d.text());
+        d.click();
+        sleep(2000);
+        let btns = className("android.widget.TextView").text("兑换").find();
+        if (btns.length > 0) {
+            let bigIndex = -1;
+            let max = 0;
+            for (let i = 0; i < btns.length; i++) {
+                let t1 = getDescriptionOnLeft(btns[i]);
+                let n1 = t1.replace(/[^\d]/g, "") * 1;
+                if (n1 > max) {
+                    bigIndex = i;
+                    max = n1;
+                }
+            }
+            if (bigIndex > -1) {
+                l_verbose(getDescriptionOnLeft(btns[bigIndex]));
+                btns[bigIndex].click();
+                sleep(2000);
+                let p2 = className("android.widget.Button").text("兑换").findOne(500);
+                let t1 = getTextOfView(p2.parent());
+                l_verbose(t1);
+                sleep(1000);
+                p2.click();
+                do {
+                    sleep(2000);
+                    if (refreshView(btns[bigIndex]).text() != btns[bigIndex].text()) {
+                        let t2 = t1.split("\n")[0];
+                        showReceived(t2);
+                        addReceived(t2.replace("兑换", ""));
+                        result |= 0b10;
+                        l_info("兑换成功");
+                        break;
+                    }
+                    // else {
+                    //    l_error("似乎兑换失败");
+                    //}
+                } while (textContains("验证").exists());
+                exchangeCount++;
+            } else {
+                l_warn("有兑换按钮，没找到对应说明");
+            }
+        }
+    }
+    back();
+    sleep(2000);
+    return result;
+}
 function lottery() {
     let result = 0;
-    let cb = className("android.widget.TextView").textContains("抽奖机会 ×").findOne(500);
-    let j = false;
-    if (!cb) {
-        let e = className("android.widget.ListView").findOne(500);
-        if (e.parent().clickable()) {
-            freeCenterScrolled = scrollShowButton(freeCenterScrolled, e);
-            e.parent().click();
-            j = true;
-            l_verbose("点进签到日历");
-            sleep(2000);
-            let b = className("android.widget.Button").text("领奖励").findOne(500);
-            if (b) { // 连签礼
-                l_log(b.text());
-                b.click();
-                sleep(1000);
-                clickIknown();
-            }
-            scrollShowButton(device.height, 0); // 进入后它会自动向下滚，滚回
-            sleep(500);
-            cb = className("android.widget.TextView").textContains("抽奖机会 ×").findOne(500);
-            if (!cb) cb = className("android.widget.TextView").text("做任务可抽奖").findOne(500);
-        } else {
-            l_error("没找到链接，无法进入签到日历");
+    let cb = null;// className("android.widget.TextView").textContains("抽奖机会 ×").findOne(500);
+    let e = className("android.widget.ListView").findOne(500);
+    if (e.parent().clickable()) {
+        freeCenterScrolled = scrollShowButton(freeCenterScrolled, e);
+        e.parent().click();
+        l_verbose("点进签到日历");
+        sleep(2000);
+        let b = className("android.widget.Button").text("领奖励").findOne(500);
+        if (b) { // 连签礼
+            l_log(b.text());
+            b.click();
+            sleep(1000);
+            clickIknown();
         }
+        scrollShowButton(device.height, 0); // 进入后它会自动向下滚，滚回
+        sleep(500);
+        cb = className("android.widget.TextView").textContains("抽奖机会 ×").findOne(500);
+        if (!cb) cb = className("android.widget.TextView").text("做任务可抽奖").findOne(500);
+    } else {
+        l_error("没找到链接，无法进入签到日历");
     }
     if (cb && (cb.text().indexOf("×") < 0 || (cb.text().indexOf("×") > 0 && cb.text().replace(/[^\d]/g, "") * 1 > 0))) {
         // 有抽奖机会
         l_verbose(cb.text());
-        if (j) scrollShowButton(0, cb);
-        else freeCenterScrolled = scrollShowButton(freeCenterScrolled, cb);
+        scrollShowButton(0, cb);
         cb.click();
         sleep(1000);
         let n = 0;
@@ -275,60 +335,16 @@ function lottery() {
         if (result & 0b01) l_info("抽奖完成");
         className("android.widget.TextView").text("").findOne(500).click(); // 关闭
     }
-    if (j) {
-        let d = className("android.widget.Button").text("去兑换 今日").findOne(500);
-        if (d) {
-            // 今日是周日兑换
-            l_verbose(shortdash);
-            l_log(d.text());
-            d.click();
-            sleep(2000);
-            let btns = className("android.widget.TextView").text("兑换").find();
-            if (btns.length > 0) {
-                let bigIndex = -1;
-                let max = 0;
-                for (let i = 0; i < btns.length; i++) {
-                    let t1 = getDescriptionOnLeft(btns[i]);
-                    let n1 = t1.replace(/[^\d]/g, "") * 1;
-                    if (n1 > max) {
-                        bigIndex = i;
-                        max = n1;
-                    }
-                }
-                if (bigIndex > -1) {
-                    l_verbose(getDescriptionOnLeft(btns[bigIndex]));
-                    btns[bigIndex].click();
-                    sleep(2000);
-                    let p2 = className("android.widget.Button").text("兑换").findOne(500);
-                    let t1 = getTextOfView(p2.parent());
-                    l_verbose(t1);
-                    sleep(1000);
-                    p2.click();
-                    exchangeCount++;
-                    sleep(2000);
-                    if (refreshView(btns[bigIndex]).text() != btns[bigIndex].text()) {
-                        let t2 = t1.split("\n")[0];
-                        showReceived(t2);
-                        addReceived(t2.replace("兑换", ""));
-                        result |= 0b10;
-                        l_info("兑换成功");
-                    } else {
-                        l_error("似乎兑换失败");
-                    }
-                } else {
-                    l_warn("有兑换按钮，没找到对应说明");
-                }
-            }
-        }
-        back();
-        sleep(2000);
-    }
+    back();
+    sleep(2000);
     return result;
 }
 function jumpMarket(btn) {
     sleep(1000);
+    home();
+    sleep(1000);
     launchQidian();
-    if (refreshView(btn).text() == btn.text()) l_warn("可能没跳转市场，\n或判断出错，并不是要跳转市场");
+    //if (refreshView(btn).text() == btn.text()) l_warn("可能没跳转市场，\n或判断出错，并不是要跳转市场");
 }
 function video_look(btn) {
     adCount++;
@@ -371,23 +387,23 @@ function video_look(btn) {
             for (let i = 0; i < res.length; i++) {
                 if (res[i].text.indexOf("获得奖励") > -1 || res[i].text.indexOf("小游戏") > -1) {
                     //log(i, res[i].text);
-                    let sec = res[i].text.replace(/[^\d]/g, "");
+                    let sec = res[i].text.replace(/[^\d]/g, "") * 1;
                     if (res[i].text.indexOf("点击") > -1) {
                         l_log("点：", sec);
-                        ad_clicknewpage = sec * 1;
+                        ad_clicknewpage = sec;
                         break;
                     } else if (res[i].text.indexOf("玩") > -1) {
                         l_log("玩：", sec);
-                        ad_clicknewpage = sec * 1;
+                        ad_clicknewpage = sec;
                         break;
                     } else if (res[i].text.indexOf("浏览") > -1) {
                         l_log("览：", sec);
-                        ad_raw = sec * 1;
+                        ad_raw = sec;
                         break;
                     } else if (res[i].text.indexOf("观看") > -1) {
                         // 冰雪游戏广告
                         l_log("看：", sec);
-                        ad_raw = sec * 1;
+                        ad_raw = sec;
                         break;
                     }
                 }
@@ -428,11 +444,17 @@ function video_look(btn) {
         let try_back_time = 2;
         let xr = device.width - t_click_x_right, yt = closeButtonBottom - t_click_y_top;
         let xc = xr, yc = yt;
+        let hc = false;
         do {
             n++;
             launchQidian();
 
-            if (currentActivity() == "com.qq.e.tg.ADActivity") n = 0;
+            if (currentActivity() == "com.qq.e.tg.ADActivity") {
+                l_verbose("界面不对0");
+                n = 0;
+                console.hide();
+                hc = true;
+            }
             if (n < try_back_time + 1) {
                 // 有些旧版本，或手机没装应该跳的app，可能有用
                 l_verbose("尝试模拟“手势返回”");
@@ -456,6 +478,12 @@ function video_look(btn) {
                         yc = yt;
                         xc -= t_click_step;
                     }
+                }
+                //if(className("android.widget.Button").text("立即下载").exists()){
+                if (text("取消").exists()) {
+                    l_verbose("界面不对1");
+                    click(device.width - xc, yc);
+                    n = 0;
                 }
             }
 
@@ -492,6 +520,7 @@ function video_look(btn) {
                 if (className("android.widget.TextView").textContains("恭喜").exists()) break;
             }
         } while (!btn.parent());
+        if (hc) showCon();
 
         if (!(xc == xr && yc == yt)) {
             yc -= t_click_step;
@@ -732,6 +761,13 @@ function game_play(min) {
         sleep(600);
     } while (wherePage() == "");
     return 0;
+}
+function showCon() {
+    //l_verbose("显示控制台");
+    console.show();
+    console.setTitle(title);
+    console.setSize(device.width / 2, device.width / 2);
+    setConPos(0);
 }
 function setConPos(n) {
     if (n * 1 !== n) n = 0;
@@ -1118,6 +1154,14 @@ l_log(longdash);
 sleep(2000);
 
 try {
+    // 签到里面的兑换
+    if (new Date().getDay() == 0) {
+        l_log("开始兑换");
+        if (exchange() == 0) l_log("无兑换");
+        l_log(longdash);
+        sleep(2000);
+    }
+
     // 开始看广告
     l_log("开始看广告");
     let targets = ["看视频", "去完成"]; // 目标按钮字符
@@ -1159,10 +1203,9 @@ try {
     l_log(longdash);
     sleep(2000);
 
-    // 签到里面的抽奖、兑换
+    // 签到里面的抽奖
     l_log("开始抽奖");
-    let result = lottery();
-    if (result == 0) l_log("无抽奖");
+    if (lottery() == 0) l_log("无抽奖");
     l_log(longdash);
     sleep(2000);
 
@@ -1302,16 +1345,20 @@ try {
     if (bonusNum == 0) l_log("无");
     l_log(longdash);
     sleep(1000);
+
+    l_log.apply(null, reviewResults());
+    home();
+    l_info("脚本正常结束");
+    l_verbose("控制台3秒后自动关闭");
+    l_log("记得清理Autox.js后台");
+    sleep(3000);
+    console.hide();
 } catch (err) {
     l_error(err.message);
     l_warn(err.stack);
-} finally {
     l_log.apply(null, reviewResults());
-    l_info("脚本已结束");
-    l_log("记得清理Autox.js后台");
-    l_verbose("控制台3秒后自动关闭");
-    sleep(3000);
-    console.hide();
+    l_error("脚本异常");
+} finally {
     engines.stopAllAndToast();
     l_exit();
 }
