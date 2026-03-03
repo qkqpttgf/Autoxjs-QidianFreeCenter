@@ -1,4 +1,4 @@
-var title = "260205起点自动";
+var title = "260301起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -161,15 +161,24 @@ function enterFreeCenter() {
         if (!enterMe()) l_exit();
         click("福利中心", 0);
     }*/
-    click("福利中心", 0);
-    let m = 0;
-    while (m < 15 && wherePage() != "freecenter") {
-        l_verbose("缓冲中……");
-        sleep(1000);
-        m++;
-    }
-
-    if (wherePage() != "freecenter") {
+    let n = 0;
+    do {
+        click("福利中心", 0);
+        let m = 0;
+        while (m < 3 && wherePage() != "freecenter") {
+            l_verbose("缓冲中……");
+            sleep(1000);
+            m++;
+        }
+        if (m == 3 && text("福利中心").exists() && text("规则").exists()) {
+            l_verbose("进入福利中心，但下半部分无法识别");
+            back();
+            n = 0;
+            sleep(1000);
+        }
+        n++;
+    } while (n < 8 && wherePage() != "freecenter");
+    if (n == 8) {
         l_warn(wherePage(), currentPackage(), currentActivity());
         l_error("没识别到福利中心");
         l_exit();
@@ -226,28 +235,40 @@ function exchange() {
                 }
             }
             if (bigIndex > -1) {
-                l_verbose(getDescriptionOnLeft(btns[bigIndex]));
-                btns[bigIndex].click();
-                sleep(2000);
-                let p2 = className("android.widget.Button").text("兑换").findOne(500);
-                let t1 = getTextOfView(p2.parent());
-                l_verbose(t1);
-                sleep(1000);
-                p2.click();
+                let n1 = 0;
+                let r1 = "";
                 do {
+                    l_verbose(getDescriptionOnLeft(btns[bigIndex]));
+                    btns[bigIndex].click();
                     sleep(2000);
-                    if (refreshView(btns[bigIndex]).text() != btns[bigIndex].text()) {
-                        let t2 = t1.split("\n")[0];
-                        showReceived(t2);
-                        addReceived(t2.replace("兑换", ""));
-                        result |= 0b10;
-                        l_info("兑换成功");
-                        break;
+                    let p2 = className("android.widget.Button").text("兑换").findOne(500);
+                    let t1 = getTextOfView(p2.parent());
+                    r1 = t1.split("\n")[0];
+                    l_verbose(t1);
+                    sleep(1000);
+                    p2.click();
+                    sleep(3000);
+                    if (textContains("拼图").exists()) {
+                        let c1 = 0;
+                        while (textContains("拼图").exists()) {
+                            c1++;
+                            setConPos(c1 % 2);
+                            //toastLog
+                            l_log("请手动过一下验证");
+                            sleep((1 + c1 % 2) * 1000);
+                        }
+                        if (c1 > 0) setConPos(0);
                     }
-                    // else {
-                    //    l_error("似乎兑换失败");
-                    //}
-                } while (textContains("验证").exists());
+                    n1++;
+                } while (refreshView(btns[bigIndex]).text() == btns[bigIndex].text() && n1 < 5);
+                if (refreshView(btns[bigIndex]).text() != btns[bigIndex].text()) {
+                    showReceived(r1);
+                    addReceived(r1.replace("兑换", ""));
+                    result |= 0b10;
+                    l_info("兑换成功");
+                } else {
+                    l_error("似乎兑换失败");
+                }
                 exchangeCount++;
             } else {
                 l_warn("有兑换按钮，没找到对应说明");
@@ -353,30 +374,32 @@ function video_look(btn) {
     let m = 0;
     let a1 = ["点击", "立即", "查看", "继续", "下载", "了解", "更多", "详情", "领取", "去"];
     do {
-        l_verbose("缓冲……");
-        sleep(1000);
-        if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
-        if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
-        if (wherePage() == "index") {
-            l_warn("似乎跳首页了，请限制左边有某些词的时候不要点这个按钮");
-            throw new Error("跳首页");
-        }
-        if (textContains("验证").exists()) {
-            let c1 = 0;
-            while (textContains("验证").exists()) {
-                c1++;
-                setConPos(c1 % 2);
-                //toastLog
-                l_log("请手动过一下验证");
-                sleep((1 + c1 % 2) * 1000);
+        while (wherePage() == "freecenter") {
+            l_verbose("缓冲……");
+            sleep(1000);
+            if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
+            if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
+            if (wherePage() == "index") {
+                l_warn("似乎跳首页了，请限制左边有某些词的时候不要点这个按钮");
+                throw new Error("跳首页");
             }
-            if (c1 > 0) setConPos(0);
-            m = 0;
+            if (textContains("验证").exists()) {
+                let c1 = 0;
+                while (textContains("验证").exists()) {
+                    c1++;
+                    setConPos(c1 % 2);
+                    //toastLog
+                    l_log("请手动过一下验证");
+                    sleep((1 + c1 % 2) * 1000);
+                }
+                if (c1 > 0) setConPos(0);
+                m = 0;
+            }
+            //else if (m > 2 && !!btn.parent()) {
+            //    l_error("似乎没有点到，或没有跳转");
+            //    throw new Error("未跳转");
+            //}
         }
-        //else if (m > 2 && !!btn.parent()) {
-        //    l_error("似乎没有点到，或没有跳转");
-        //    throw new Error("未跳转");
-        //}
         m++;
         if (m > 2) {
             if (currentActivity() != "com.qq.e.tg.RewardvideoPortraitADActivity") btn.click();
@@ -385,7 +408,7 @@ function video_look(btn) {
             //capimg = images.clip(capimg, 0, 0, device.width, closeButtonBottom);
             let res = paddle.ocr(capimg);
             for (let i = 0; i < res.length; i++) {
-                if (res[i].text.indexOf("获得奖励") > -1 || res[i].text.indexOf("小游戏") > -1) {
+                if (res[i].text.indexOf("得奖励") > -1 || res[i].text.indexOf("小游戏") > -1) {
                     //log(i, res[i].text);
                     let sec = res[i].text.replace(/[^\d]/g, "") * 1;
                     if (res[i].text.indexOf("点击") > -1) {
@@ -424,7 +447,7 @@ function video_look(btn) {
             l_warn("似乎哪里不对");
             break;
         }
-    } while (!(textContains("可获得奖励").exists() || textContains("跳过").exists()));
+    } while (!(textContains("得奖励").exists() || textContains("跳过").exists()));
 
     if (ad_raw > -1 || ad_clicknewpage > -1) {
         // 新广告
@@ -701,22 +724,15 @@ function game_play(min) {
     let second = min * 60;
     swipe(device.width - 50, device.height / 3, device.width - 55, device.height / 2, 900);
     let num = 0;
-    let thread = threads.start(
-        function timer1() {
-            //计时
-            do {
-                sleep(1000);
-                num++;
-            } while (num < 15);
-            l_error("没成功获取到游戏中心");
-        }
-    );
     do {
+        num++;
         l_verbose("缓冲……");
         sleep(1000);
-        if (num >= 15) return 1;
+        if (num > 10) {
+            l_error("没成功获取到游戏中心");
+            return 1;
+        }
     } while (wherePage() != "gamecenter" && wherePage() != "browser");
-    thread.interrupt();
     if (wherePage() == "gamecenter") {
         l_info("成功打开游戏中心");
         sleep(1000);
@@ -1087,6 +1103,11 @@ function reviewResults() {
     r.push("当前账号：");
     r.push(nickname.concat("\n"));
     r.push("本次总用时" + formatTime(new Date().getTime() - startTime) + "\n");
+    if (exchangeCount > 0) {
+        r.push("兑换");
+        r.push(exchangeCount);
+        r.push("次\n");
+    }
     if (adCount > 0) {
         r.push("看");
         r.push(adCount);
@@ -1095,11 +1116,6 @@ function reviewResults() {
     if (lotteryCount > 0) {
         r.push("抽奖");
         r.push(lotteryCount);
-        r.push("次\n");
-    }
-    if (exchangeCount > 0) {
-        r.push("兑换");
-        r.push(exchangeCount);
         r.push("次\n");
     }
     if (readTime > 0) {
@@ -1298,10 +1314,11 @@ try {
                 b.click();
                 sleep(5000);
                 let res = game_play(min);
+                if (res == 1) back();
                 sleep(2000);
                 if (wherePage() == "gamecenter") back();
                 sleep(3000);
-                if (res != 0) break;
+                if (res > 1) break;
             } else {
                 l_error("没找到对应的“" + gamebtntext + "”按钮，可能起点改了布局或按钮字符");
             }
