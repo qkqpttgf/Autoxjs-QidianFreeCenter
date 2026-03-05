@@ -1,4 +1,4 @@
-var title = "260301起点自动";
+var title = "260304起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -165,12 +165,12 @@ function enterFreeCenter() {
     do {
         click("福利中心", 0);
         let m = 0;
-        while (m < 3 && wherePage() != "freecenter") {
+        while (m < 5 && wherePage() != "freecenter") {
             l_verbose("缓冲中……");
             sleep(1000);
             m++;
         }
-        if (m == 3 && text("福利中心").exists() && text("规则").exists()) {
+        if (m == 5 && text("福利中心").exists() && text("规则").exists()) {
             l_verbose("进入福利中心，但下半部分无法识别");
             back();
             n = 0;
@@ -331,7 +331,9 @@ function lottery() {
                 sleep(800);
                 let n1 = 0;
                 while (n1 < 8) {
+                    l_verbose("转");
                     sleep(1000);
+                    n1++;
                     let r1 = getLotteryReceive(c.parent().child(c.indexInParent() - 1));
                     let r2 = getLotteryReceive(c.parent().child(c.indexInParent() - 2));
                     let r3 = getLotteryReceive(c.parent().child(c.indexInParent() - 3));
@@ -341,9 +343,7 @@ function lottery() {
                         result |= 0b01;
                         break;
                     }
-                    r = r1;
-                    l_verbose("转");
-                    n1++;
+                    r = r3;
                 }
                 if (n1 == 8) l_verbose("未获取到抽奖结果");
                 n = 0;
@@ -472,7 +472,8 @@ function video_look(btn) {
             n++;
             launchQidian();
 
-            if (currentActivity() == "com.qq.e.tg.ADActivity") {
+            // if (currentActivity() == "com.qq.e.tg.ADActivity") {
+            if (currentActivity() != "com.qq.e.tg.RewardvideoPortraitADActivity") {
                 l_verbose("界面不对0");
                 n = 0;
                 console.hide();
