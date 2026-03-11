@@ -1,4 +1,4 @@
-var title = "260304起点自动";
+var title = "260306起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -472,12 +472,12 @@ function video_look(btn) {
             n++;
             launchQidian();
 
-            // if (currentActivity() == "com.qq.e.tg.ADActivity") {
             if (currentActivity() != "com.qq.e.tg.RewardvideoPortraitADActivity") {
                 l_verbose("界面不对0");
                 n = 0;
                 console.hide();
                 hc = true;
+                if (currentActivity() == "com.qidian.QDReader.ui.activity.QDBrowserActivity") home();
             }
             if (n < try_back_time + 1) {
                 // 有些旧版本，或手机没装应该跳的app，可能有用
