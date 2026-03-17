@@ -1,4 +1,4 @@
-var title = "260316起点自动";
+var title = "260317起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -470,8 +470,6 @@ function video_look(btn) {
         let hc = false;
         do {
             n++;
-            launchQidian();
-
             if (currentActivity() != "com.qq.e.tg.RewardvideoPortraitADActivity") {
                 l_verbose("界面不对0");
                 n = 0;
@@ -480,6 +478,8 @@ function video_look(btn) {
                 hc = true;
                 sleep(1100);
             }
+            launchQidian();
+
             if (n < try_back_time + 1) {
                 // 有些旧版本，或手机没装应该跳的app，可能有用
                 l_verbose("尝试模拟“手势返回”");
