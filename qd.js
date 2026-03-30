@@ -1,4 +1,4 @@
-var title = "260317起点自动";
+var title = "260330起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -730,7 +730,7 @@ function game_play(min) {
         num++;
         l_verbose("缓冲……");
         sleep(1000);
-        if (num > 10) {
+        if (num > 8) {
             l_error("没成功获取到游戏中心");
             return 1;
         }
@@ -1031,6 +1031,13 @@ function sortFormatReceive() {
         if (s.substr(-1) == "）") s = s.substring(0, s.lastIndexOf("（"));
         return s;
     }
+    function indexFirstNotNum(str) {
+        for (let i = 0; i < str.length; i++) {
+            let n = str.substring(i, i + 1) * 1;
+            if (isNaN(n)) return i;
+        }
+        return -1;
+    }
     function indexLastNum(str) {
         for (let i = str.length - 1; i > 0; i--) {
             let n = str.substring(i - 1, i) * 1;
@@ -1047,11 +1054,20 @@ function sortFormatReceive() {
     }
     let s = new Object();
     Object.keys(ADReceive).forEach(k => {
-        k1 = rmBracket(k);
+        let k1 = k;
+        if (k1.indexOf("×") > -1) k1 = k1.replace("×", "");
+        k1 = rmBracket(k1);
         let p = indexLastNum(k1);
+        let p1 = indexLastNotNum(k1);
         let a1 = "";
-        if (p < 0) a1 = k1;
-        else a1 = "0" + k1.substring(p);
+        if (p1 > p) {
+            //文字在数字后面 或没数字
+            if (p < 0) a1 = k1;
+            else a1 = "0" + k1.substring(p);
+        } else {
+            //文字在数字前
+            a1 = "0" + k1.substring(0, p1);
+        }
         if (!(a1 in s)) s[a1] = new Object();
         s[a1][k] = ADReceive[k];
     });
@@ -1064,19 +1080,13 @@ function sortFormatReceive() {
         let t = Object.keys(s[k]).sort((a, b) => {
             a = rmBracket(a);
             b = rmBracket(b);
-            let p1 = indexLastNum(a);
-            let p2 = indexLastNum(b);
-            if (p1 < 0) return 1;
-            if (p2 < 0) return -1;
-            let a1 = a.substring(0, p1);
-            let b1 = b.substring(0, p2);
-            let p11 = indexLastNotNum(a1);
-            let p21 = indexLastNotNum(b1);
-            if (p11 < 0) p11 = 0;
-            if (p21 < 0) p21 = 0;
-            let a2 = a1.substring(p11) * 1;
-            let b2 = b1.substring(p21) * 1;
-            return b2 - a2;
+            let p1 = a.indexOf("-");
+            let p2 = b.indexOf("-");
+            if (p1 > -1) a = a.substring(p1 + 1);
+            if (p2 > -1) b = b.substring(p2 + 1);
+            let a1 = a.match(/(\d+)/g);
+            let b1 = b.match(/(\d+)/g);
+            return b1[0] * 1 - a1[0] * 1;
         });
         for (let i = 0; i < t.length; i++) {
             s1[k][t[i]] = s[k][t[i]];
