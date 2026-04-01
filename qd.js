@@ -1,4 +1,4 @@
-var title = "260330起点自动";
+var title = "260401起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -1241,7 +1241,7 @@ try {
 
     // 当日阅读5分钟
     let target1 = ["去阅读"]; // 目标按钮字符
-    let expstr1 = ["当日阅读"]; // 目标按钮左边有这些字
+    let expstr1 = ["推荐", "当日阅读"]; // 目标按钮左边有这些字
     for (let i = 0; i < target1.length; i++) {
         let target = target1[i];
         if (!text(target).exists()) continue;
