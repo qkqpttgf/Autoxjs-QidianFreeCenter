@@ -1,4 +1,4 @@
-var title = "260401起点自动";
+var title = "260403起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -14,6 +14,7 @@ var t_click = new Object(); // 用于存储扫描点击成功的坐标
 var debug = false; // 开启debug循环
 var c_pos = [[0, closeButtonBottom], [device.width / 2, device.height - 500]]; // 控制台位置切换
 var qidianPackageName = "com.qidian.QDReader";
+var autojsPackage = currentPackage();
 var longdash = "————————————";
 var shortdash = "——————";
 var freeCenterScrolled = 0;
@@ -53,7 +54,7 @@ try {
     l_error("无Paddle识图功能，推荐安装Autox.js v7！");
     l_exit();
 }
-console.verbose("建议Autox.js开启“稳定模式”、“前台服务”。");
+console.verbose("建议Autox.js开启“稳定模式”、“前台服务”、“使用情况访问权限”。");
 console.verbose("建议重启手机或清理手机后再运行。");
 l_log(longdash);
 
@@ -403,10 +404,7 @@ function video_look(btn) {
         m++;
         if (m > 2) {
             if (currentActivity() != "com.qq.e.tg.RewardvideoPortraitADActivity") btn.click();
-            //    l_verbose("尝试截图OCR");
-            let capimg = captureScreen();
-            //capimg = images.clip(capimg, 0, 0, device.width, closeButtonBottom);
-            let res = paddle.ocr(capimg);
+            let res = cappad();
             for (let i = 0; i < res.length; i++) {
                 if (res[i].text.indexOf("得奖励") > -1 || res[i].text.indexOf("小游戏") > -1) {
                     //log(i, res[i].text);
@@ -514,8 +512,7 @@ function video_look(btn) {
 
             if (!btn.parent()) {
                 let t1 = new Date();
-                let capimg = captureScreen();
-                let res = paddle.ocr(capimg);
+                let res = cappad();
                 for (let i = 0; i < res.length; i++) {
                     if (res[i].text.indexOf("可获得奖励") > -1) {
                         sec = res[i].text.replace(/[^\d]/g, "");
@@ -792,6 +789,16 @@ function setConPos(n) {
     if (n > c_pos.length - 1) n = 0;
     console.setPosition(c_pos[n][0], c_pos[n][1]);
 }
+function cappad() {
+    //l_verbose("尝试截图OCR");
+    console.hide();
+    sleep(100);
+    let capimg = captureScreen();
+    //capimg = images.clip(capimg, 0, 0, device.width, closeButtonBottom);
+    sleep(100);
+    showCon();
+    return paddle.ocr(capimg);
+}
 function l_exit() {
     debugDelay = -1;
     threads.shutDownAll();
@@ -891,10 +898,12 @@ function launchQidian() {
     if (p != qidianPackageName) {
         l_verbose("其它app：", getAppName(p));//, currentActivity()
         home();
-        sleep(600);
+        sleep(300);
+        launch(autojsPackage);
+        sleep(800);
         launch(qidianPackageName);
         //waitForPackage(qidianPackageName, 500); // 似乎有时会等很久
-        sleep(1500);
+        sleep(900);
     }
 }
 function strHasArr(s, a) {
