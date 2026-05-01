@@ -1,4 +1,4 @@
-var title = "260426起点自动";
+var title = "260501起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -429,10 +429,7 @@ function lottery() {
 }
 function jumpMarket(btn) {
     sleep(1000);
-    home();
-    sleep(1000);
     launchQidian();
-    //if (refreshView(btn).text() == btn.text()) l_warn("可能没跳转市场，\n或判断出错，并不是要跳转市场");
 }
 function video_look(btn) {
     adCount++;
@@ -1178,7 +1175,6 @@ if (debug) {
         function t() {
             let n = 0, a = 1000, b = 0;
             while (debugDelay > 0) {
-                if (b < a) sleep(a - b);
                 b = 0;
                 n++;
                 if (n >= debugDelay) {
@@ -1188,6 +1184,7 @@ if (debug) {
                     n = 0;
                     b = new Date().getTime() - st;
                 }
+                if (b < a) sleep(a - b);
             }
         }
     );
@@ -1228,21 +1225,21 @@ try {
             for (let ii = aa.length - 1; ii > -1; ii--) {
                 //l_verbose(target);
                 let s = getDescriptionOnLeft(aa[ii]);
-                if (s.indexOf("广告") > -1) { // 目标按钮左边介绍文字如果有广告才点
-                    freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
-                    l_verbose(shortdash);
-                    l_log(s);
-                    aa[ii].click();
-                    sleep(1000);
-                    video_look(aa[ii]);
-                    break; // 不然会先按下面的，刚刚按过现在又亮起来的会下次循环按
-                } else {
-                    if (s.indexOf("市场") > -1) {
-                        jumpMarket(aa[ii]);
-                        break;
-                    }
+                let c = 0;
+                if (s.indexOf("广告") > -1) c = 1;  // 目标按钮左边介绍文字如果有广告才点
+                if (s.indexOf("市场") > -1) c = 2;
+                if (c == 0) {
                     targetFalse++;
+                    continue;
                 }
+                freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
+                l_verbose(shortdash);
+                l_log(s);
+                aa[ii].click();
+                sleep(1000);
+                if (c == 1) video_look(aa[ii]);
+                if (c == 2) jumpMarket(aa[ii]);
+                break; // 不然会先按下面的，刚刚按过现在又亮起来的会下次循环按
             }
         }
         if (targetFalse == targetNum) break;
