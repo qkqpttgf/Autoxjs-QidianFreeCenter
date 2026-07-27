@@ -1,4 +1,4 @@
-var title = "260618起点自动";
+var title = "260620起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -230,6 +230,12 @@ function enterFreeCenter() {
         }
         if (m == 5 && text("福利中心").exists() && text("规则").exists()) {
             l_verbose("进入福利中心，但下半部分无法识别");
+            back();
+            n = 0;
+            sleep(1000);
+        }
+        if (textContains("失败").exists()) {
+            l_verbose("加载失败，可能网络不好");
             back();
             n = 0;
             sleep(1000);
@@ -789,8 +795,12 @@ function read_book(min) {
         return n1;
     }
     // 确保进正文
-    swipe(device.width * 3 / 4, device.height / 2 + 105, device.width / 4, device.height / 2 + 100, 500);
-    sleep(500);
+    let flip = 1;
+    if (textContains("本作品").exists() && textContains("版权所有").exists()) flip = 3;
+    for (let i = 0; i < flip; i++) {
+        swipe(device.width * 3 / 4, device.height / 2 + 105, device.width / 4, device.height / 2 + 100, 500);
+        sleep(500);
+    }
     if (bookend()) while (bookend()) sleep(500);
 
     debugDelay = 30;
