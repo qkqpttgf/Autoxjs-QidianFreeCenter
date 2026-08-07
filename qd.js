@@ -1,4 +1,4 @@
-var title = "260620起点自动";
+var title = "260806起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -445,14 +445,14 @@ function video_look(btn) {
     let a1 = ["点击", "立即", "查看", "继续", "下载", "了解", "更多", "详情", "领取", "去"];
     do {
         sleep(500);
-        while (wherePage() == "freecenter") {
+        while (wherePage() == "freecenter" || currentActivity().indexOf("TCaptchaDialog") > -1) {
             l_verbose("缓冲……");
             sleep(1000);
             if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
             if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
             if (textContains("验证").exists()) {
                 let c1 = 0;
-                while (textContains("验证").exists()) {
+                do {
                     if (c1 > 10) {
                         let chap = false;
                         let res = cappad();
@@ -465,7 +465,7 @@ function video_look(btn) {
                     setConPos(c1 % 2);
                     l_log("请手动过一下");
                     sleep((1 + c1 % 2) * 1000);
-                }
+                } while (textContains("验证").exists())
                 setConPos(0);
                 m = 0;
             }
@@ -857,7 +857,7 @@ function game_play(min) {
         let play_btn = text("在线玩").findOnce(0);
         scrollShowButton(0, play_btn);
         play_btn.click();
-        l_log("在线玩");
+        l_log(getTextOfView(play_btn.parent().parent()));
         sleep(2000);
     }
     if (wherePage() == "browser") l_info("应该直接打开游戏了");
