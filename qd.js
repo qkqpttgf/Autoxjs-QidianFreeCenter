@@ -1,4 +1,4 @@
-var title = "260810起点自动";
+var title = "260824起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -339,8 +339,11 @@ function exchange() {
             }
         }
     }
-    back();
-    sleep(2000);
+    while (wherePage() == "signdetail") {
+        back();
+        sleep(1000);
+    }
+    sleep(1000);
     return result;
 }
 function lottery() {
@@ -429,8 +432,11 @@ function lottery() {
         if (result & 0b01) l_info("抽奖完成");
         className("android.widget.TextView").text("").findOne(500).click(); // 关闭
     }
-    back();
-    sleep(2000);
+    while (wherePage() == "signdetail") {
+        back();
+        sleep(1000);
+    }
+    sleep(1000);
     return result;
 }
 function jumpMarket(btn) {
