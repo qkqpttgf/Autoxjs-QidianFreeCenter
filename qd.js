@@ -1,4 +1,4 @@
-var title = "260824起点自动";
+var title = "261104起点自动";
 var logFile = false; // 是否将日志保存到文件中
 
 var closeButtonBottom = 200; // 新广告右上角的X的下沿高度，控制台也放这么高
@@ -107,12 +107,12 @@ function launchQidian() {
     if (p != qidianPackageName) {
         l_verbose("其它app：", getAppName(p));//, currentActivity()
         home();
-        //sleep(300);
+        //sl1p(300);
         //launch(autojsPackage);
-        sleep(500);
+        sl1p(500);
         launch(qidianPackageName);
         //waitForPackage(qidianPackageName, 500); // 似乎有时会等很久
-        sleep(900);
+        sl1p(900);
     }
 }
 function openQidian() {
@@ -142,11 +142,11 @@ function openQidian() {
         } else {
             l_verbose("缓冲……");
         }
-        sleep(1000);
+        sl1p();
         closeDialogs();
         if (n > 20 && currentPackage() != qidianPackageName) break;
     } while (wherePage() != "index");
-    sleep(600);
+    sl1p(600);
 
     if (!enterMe()) {
         l_error("似乎未识别到起点，请清理进程重新来一遍");
@@ -177,7 +177,7 @@ function enterMe() {
     }
     let n = 15;
     do {
-        sleep(1000);
+        sl1p();
         launchQidian();
         closeDialogs();
         n--;
@@ -187,7 +187,7 @@ function enterMe() {
         //l_log("成功打开“我”");
         nickname = id("tvName").findOne(500).text();
         l_log("当前账号：", nickname);
-        sleep(1000);
+        sl1p();
         return true;
     }
     l_warn("未找到昵称，可能版本不一样");
@@ -200,7 +200,7 @@ function enterFreeCenter() {
         if (btn && getTextOfView(btn).indexOf("签到") > -1) {
             btn.click();
             l_info("签到");
-            sleep(2000);
+            sl1p(2000);
         }
     }
     if (wherePage() != "index") {
@@ -210,7 +210,7 @@ function enterFreeCenter() {
         while (m < 15 && wherePage() != "freecenter") {
             m++;
             l_verbose("缓冲");
-            sleep(1000);
+            sl1p();
         }
     } else if (text("领福利").exists()) {
         l_log("领福利");
@@ -225,20 +225,20 @@ function enterFreeCenter() {
         let m = 0;
         while (m < 5 && wherePage() != "freecenter") {
             l_verbose("缓冲中……");
-            sleep(1000);
+            sl1p();
             m++;
         }
         if (m == 5 && text("福利中心").exists() && text("规则").exists()) {
             l_verbose("进入福利中心，但下半部分无法识别");
             back();
             n = 0;
-            sleep(1000);
+            sl1p();
         }
         if (textContains("失败").exists()) {
             l_verbose("加载失败，可能网络不好");
             back();
             n = 0;
-            sleep(1000);
+            sl1p();
         }
         n++;
     } while (n < 8 && wherePage() != "freecenter");
@@ -252,15 +252,15 @@ function enterFreeCenter() {
 function closeDialogs() {
     function c(str, btn) {
         l_verbose(str);
-        sleep(800);
+        sl1p(800);
         btn.click();
-        sleep(800);
+        sl1p(800);
     }
     if (textContains("青少年模式").exists()) {
         l_verbose("青少年模式");
-        sleep(500);
+        sl1p(500);
         click("我知道了", 0);
-        sleep(500);
+        sl1p(500);
     }
     if (id("upgrade_dialog_close_btn").exists()) c("升级提醒", id("upgrade_dialog_close_btn").findOne(500));
     if (id("btnClose").exists()) c("徽章", id("btnClose").findOne(500));
@@ -273,9 +273,9 @@ function exchange() {
         freeCenterScrolled = scrollShowButton(freeCenterScrolled, e);
         e.parent().click();
         l_verbose("点进签到日历");
-        sleep(2000);
+        sl1p(2000);
         scrollShowButton(device.height, 0); // 进入后它会自动向下滚，滚回
-        sleep(500);
+        sl1p(500);
     } else {
         l_error("没找到链接，无法进入签到日历");
     }
@@ -285,7 +285,7 @@ function exchange() {
         l_verbose(shortdash);
         l_log(d.text());
         d.click();
-        sleep(2000);
+        sl1p(2000);
         let btns = className("android.widget.TextView").text("兑换").find();
         if (btns.length > 0) {
             let bigIndex = -1;
@@ -304,14 +304,14 @@ function exchange() {
                 do {
                     l_verbose(getDescriptionOnLeft(btns[bigIndex]));
                     btns[bigIndex].click();
-                    sleep(2000);
+                    sl1p(2000);
                     let p2 = className("android.widget.Button").text("兑换").findOne(500);
                     let t1 = getTextOfView(p2.parent());
                     r1 = t1.split("\n")[0];
                     l_verbose(t1);
-                    sleep(1000);
+                    sl1p();
                     p2.click();
-                    sleep(3000);
+                    sl1p(3000);
                     if (textContains("拼图").exists()) {
                         let c1 = 0;
                         while (textContains("拼图").exists()) {
@@ -319,7 +319,7 @@ function exchange() {
                             setConPos(c1 % 2);
                             //toastLog
                             l_log("请手动过一下");
-                            sleep((1 + c1 % 2) * 1000);
+                            sl1p((1 + c1 % 2) * 1000);
                         }
                         if (c1 > 0) setConPos(0);
                     }
@@ -341,9 +341,9 @@ function exchange() {
     }
     while (wherePage() == "signdetail") {
         back();
-        sleep(1000);
+        sl1p();
     }
-    sleep(1000);
+    sl1p();
     return result;
 }
 function lottery() {
@@ -354,16 +354,16 @@ function lottery() {
         freeCenterScrolled = scrollShowButton(freeCenterScrolled, e);
         e.parent().click();
         l_verbose("点进签到日历");
-        sleep(2000);
+        sl1p(2000);
         let b = className("android.widget.Button").text("领奖励").findOne(500);
         if (b) { // 连签礼
             l_log(b.text());
             b.click();
-            sleep(1000);
+            sl1p();
             clickIknown();
         }
         scrollShowButton(device.height, 0); // 进入后它会自动向下滚，滚回
-        sleep(500);
+        sl1p(500);
         cb = className("android.widget.TextView").textContains("抽奖机会 ×").findOne(500);
         if (!cb) cb = className("android.widget.TextView").text("做任务可抽奖").findOne(500);
     } else {
@@ -374,7 +374,7 @@ function lottery() {
         l_verbose(cb.text());
         scrollShowButton(0, cb);
         cb.click();
-        sleep(1000);
+        sl1p();
         let n = 0;
         while (n < 5) {
             l_verbose(shortdash);
@@ -384,9 +384,9 @@ function lottery() {
                 while (v != null && v.text() == refreshView(v).text()) {
                     l_log(v.text());
                     v.click();
-                    sleep(2000);
+                    sl1p(2000);
                     video_look(v);
-                    sleep(1000);
+                    sl1p();
                     c = className("android.widget.TextView").text("抽奖").findOne(500);
                 }
             }
@@ -395,11 +395,11 @@ function lottery() {
                 let r = "";
                 c.click();
                 lotteryCount++;
-                sleep(800);
+                sl1p(800);
                 let n1 = 0;
                 while (n1 < 8) {
                     l_verbose("转");
-                    sleep(1000);
+                    sl1p();
                     n1++;
                     let r1 = getLotteryReceive(c.parent().child(c.indexInParent() - 1));
                     let r2 = getLotteryReceive(c.parent().child(c.indexInParent() - 2));
@@ -423,7 +423,7 @@ function lottery() {
                 }
                 if (n1 == 8) l_verbose("未获取到抽奖结果");
                 n = 0;
-                sleep(1000);
+                sl1p();
             } else {
                 break;
             }
@@ -434,13 +434,13 @@ function lottery() {
     }
     while (wherePage() == "signdetail") {
         back();
-        sleep(1000);
+        sl1p();
     }
-    sleep(1000);
+    sl1p();
     return result;
 }
 function jumpMarket(btn) {
-    sleep(1000);
+    sl1p();
     launchQidian();
 }
 function video_look(btn) {
@@ -450,10 +450,10 @@ function video_look(btn) {
     let m = 0;
     let a1 = ["点击", "立即", "查看", "继续", "下载", "了解", "更多", "详情", "领取", "去"];
     do {
-        sleep(500);
+        sl1p(500);
         while (wherePage() == "freecenter" || currentActivity().indexOf("TCaptchaDialog") > -1) {
             l_verbose("缓冲……");
-            sleep(1000);
+            sl1p();
             if (text("可从这里回到福利页哦").exists()) click("我知道了", 0);
             if (textContains("播放将消耗流量").exists()) click("继续播放", 0);
             if (textContains("验证").exists()) {
@@ -470,7 +470,7 @@ function video_look(btn) {
                     c1++;
                     setConPos(c1 % 2);
                     l_log("请手动过一下");
-                    sleep((1 + c1 % 2) * 1000);
+                    sl1p((1 + c1 % 2) * 1000);
                 } while (textContains("验证").exists())
                 setConPos(0);
                 m = 0;
@@ -530,13 +530,13 @@ function video_look(btn) {
         if (sec == -1) sec = ad_raw;
         debugDelay = 3;
         while (sec > 0) {
-            sleep(1000);
+            sl1p();
             if (sec % 5 == 0) click(random(10, 20), random(10, 20));
             sec--;
         }
         l_verbose("应该看完");
         debugDelay = 1;
-        sleep(1000);
+        sl1p();
 
         // 看完点X
         let n = 0;
@@ -551,7 +551,7 @@ function video_look(btn) {
                 home();
                 console.hide();
                 cmdIsDisplay = false;
-                sleep(900);
+                sl1p(900);
             }
             launchQidian();
 
@@ -592,6 +592,14 @@ function video_look(btn) {
                 let t1 = new Date();
                 let res = cappad();
                 for (let i = 0; i < res.length; i++) {
+                    if (res[i].text.indexOf("继续观看") > -1) {
+                        let b = res[i].bounds;
+                        click(parseInt((b.left + b.right) / 2), parseInt((b.top + b.bottom) / 2));
+                        sl1p(600);
+                        swipe(device.width * 3 / 4, device.height / 2 + 100, device.width * 3 / 4, device.height / 2 - 105, 500);
+                        l_verbose(shortdash);
+                        swipe(device.width / 4, device.height / 2 + 105, device.width * 3 / 4, device.height / 2 + 100, 500);
+                    }
                     if (res[i].text.indexOf("得奖励") > -1 || res[i].text.indexOf("小游戏") > -1 || res[i].text.indexOf("完成第") > -1) {
                         let m1 = res[i].text.match(/(\d+(?:\.\d+)?)\s*秒/);
                         if (!m1) continue;
@@ -599,13 +607,14 @@ function video_look(btn) {
                         sec = m1[1] * 1;
                         if (sec > 0) break;
                     }
-                    if (res[i].text.indexOf("滑动继续") > -1) {
+                    if (res[i].text.indexOf("滑动继续") > -1 || res[i].text.indexOf("完成第") > -1) {
                         l_verbose("广告", adCount, "结束");
-                        swipe(device.width / 4, device.height / 2 + 100, device.width * 3 / 4, device.height / 2 + 105, 500);
+                        swipe(device.width / 4, device.height / 2 + 100, device.width / 4, device.height / 2 - 105, 500);
                         l_verbose(shortdash);
                         swipe(device.width * 3 / 4, device.height / 2 + 105, device.width / 4, device.height / 2 + 100, 500);
                         adCount++;
                         l_verbose("广告", adCount, "开始");
+                        continue;
                     }
                 }
                 if (sec > 0) {
@@ -618,7 +627,7 @@ function video_look(btn) {
                     }
                     debugDelay = 3;
                     while (sec > 0) {
-                        sleep(1000);
+                        sl1p();
                         if (sec % 5 == 0) click(random(10, 20), random(10, 20));
                         sec--;
                     }
@@ -627,9 +636,9 @@ function video_look(btn) {
                     n = 0;
                 }
                 let t2 = 1000 - (new Date() - t1);
-                if (t2 > 0) sleep(t2);
+                if (t2 > 0) sl1p(t2);
             } else {
-                sleep(1000);
+                sl1p();
                 if (className("android.widget.TextView").textContains("恭喜").exists()) break;
             }
         } while (!btn.parent());
@@ -650,7 +659,7 @@ function video_look(btn) {
         if (className("android.widget.TextView").textContains("跳过").exists()) {
             let thread1 = threads.start(
                 function t() {
-                    sleep(1000);
+                    sl1p();
                     if (!className("android.widget.TextView").textContains("跳过").exists()) {
                         thread1.interrupt();
                         m = 0;
@@ -664,7 +673,7 @@ function video_look(btn) {
         let x1 = 1, x2 = 1, y1 = 1, y2 = 1;
         let thread = threads.start(
             function coordinate() {
-                sleep(3000);
+                sl1p(3000);
                 if (textContains("可获得奖励").exists() && !video_quit) {
                     video_quit = textContains("可获得奖励").findOne(500).bounds();
                     x1 = 0;
@@ -699,7 +708,7 @@ function video_look(btn) {
                     l_verbose(video_flag);
                     if (v1 == 0) {
                         l_log('结束');
-                        sleep(1200);
+                        sl1p(1200);
                         break;
                     } else {
                         v = v1;
@@ -707,20 +716,20 @@ function video_look(btn) {
                 }
             } else if (video_flag.includes("观看完视频")) {
                 l_log("看完结束");
-                sleep(1100);
+                sl1p(1100);
                 break;
             } else {
-                sleep(1000);
+                sl1p();
                 m1++;
             }
 
             if (textContains("继续观看").exists()) {
                 textContains("继续观看").click();
-                sleep(1500);
+                sl1p(1500);
             }
             if (textContains("继续听完").exists()) {
                 textContains("继续听完").click();
-                sleep(1500);
+                sl1p(1500);
             }
             if (m1 > 20) {
                 l_log("已看20秒");
@@ -755,11 +764,11 @@ function video_look(btn) {
                         click(x, y);
                         if (textContains("继续观看").exists()) {
                             textContains("继续观看").click();
-                            sleep(1500);
+                            sl1p(1500);
                         }
                         if (textContains("继续听完").exists()) {
                             textContains("继续听完").click();
-                            sleep(1500);
+                            sl1p(1500);
                         }
                     } while (textContains("可获得奖励").exists());
                 }
@@ -770,13 +779,13 @@ function video_look(btn) {
                 l_error("未知原因退出失败");
                 throw new Error("退出失败");
             }
-            sleep(1000);
+            sl1p();
         } while (!btn.parent());
     }
-    //sleep(1000);
+    //sl1p();
     clickIknown();
     l_verbose("广告", adCount, "结束");
-    sleep(1000);
+    sl1p();
 }
 function read_book(min) {
     let second = min * 60;
@@ -791,7 +800,7 @@ function read_book(min) {
         if (n1) {
             for (let ii = 0; ii < 3; ii++) {
                 swipe(device.width / 4, device.height / 2 + 100, device.width * 3 / 4, device.height / 2 + 105, 500);
-                sleep(900);
+                sl1p(900);
             }
         }
         return n1;
@@ -801,9 +810,9 @@ function read_book(min) {
     if (textContains("本作品").exists() && textContains("版权所有").exists()) flip = 3;
     for (let i = 0; i < flip; i++) {
         swipe(device.width * 3 / 4, device.height / 2 + 105, device.width / 4, device.height / 2 + 100, 500);
-        sleep(500);
+        sl1p(500);
     }
-    if (bookend()) while (bookend()) sleep(500);
+    if (bookend()) while (bookend()) sl1p(500);
 
     debugDelay = 30;
     let n = 0;
@@ -826,15 +835,15 @@ function read_book(min) {
             else swipe(device.width * 3 / 4, device.height / 2 + 105, device.width / 4, device.height / 2 + 100, b);
             n++;
         }
-        sleep(a - b);
+        sl1p(a - b);
         second--;
     } while (second > -2);
     l_verbose("时间到");
     readTime += new Date().getTime() - st;
     debugDelay = 1;
-    sleep(500);
+    sl1p(500);
     back();
-    sleep(2000);
+    sl1p(2000);
 }
 function game_play(min) {
     let second = min * 60;
@@ -843,7 +852,7 @@ function game_play(min) {
     do {
         num++;
         l_verbose("缓冲……");
-        sleep(1000);
+        sl1p();
         if (num > 8) {
             l_error("没成功获取到游戏中心");
             return 1;
@@ -851,20 +860,28 @@ function game_play(min) {
     } while (wherePage() != "gamecenter" && wherePage() != "browser");
     if (wherePage() == "gamecenter") {
         l_info("成功打开游戏中心");
-        sleep(1000);
+        sl1p();
         if (text("在线玩").find().length < 2) {
             l_warn("未识别到“在线玩”");
             return 1;
         }
-        let play_btn = text("在线玩").findOnce(0);
+        let play_btn = text("在线玩").find()[2];
         scrollShowButton(0, play_btn);
         play_btn.click();
         l_log(getTextOfView(play_btn.parent().parent()));
-        sleep(2000);
+        sl1p(2000);
+        if (wherePage() == "freecenter") {
+            l_warn("直接回福利中心了");
+            return 0;
+        }
+    } else if (wherePage() == "browser") {
+        l_info("应该直接打开游戏了");
+    } else {
+        l_verbose("哪里不对");
+        return 0;
     }
-    if (wherePage() == "browser") l_info("应该直接打开游戏了");
     l_verbose(shortdash);
-    sleep(1000);
+    sl1p();
 
     debugDelay = 30;
     let st = new Date().getTime();
@@ -872,7 +889,7 @@ function game_play(min) {
         if (textContains("实名认证").exists()) {
             //身份信息仅用于实名认证使用
             l_warn("似乎有实名认证，请先自行认证");
-            sleep(2000);
+            sl1p(2000);
             back();
             return 2;
         }
@@ -880,9 +897,9 @@ function game_play(min) {
             l_verbose("倒计时" + (second / 60) + "分钟");
         }
         if (second % 5 == 0) {
-            click(random(10, 20), random(10, 20));
+            click(random(100, 120), random(10, 20));
         }
-        sleep(1000);
+        sl1p();
         second--;
     } while (second > -5);
     debugDelay = 1;
@@ -890,7 +907,7 @@ function game_play(min) {
     l_log("时间到");
     do {
         back();
-        sleep(600);
+        sl1p(600);
     } while (wherePage() == "");
     return 0;
 }
@@ -911,13 +928,18 @@ function cappad() {
     if (cid) {
         console.hide();
         cmdIsDisplay = false;
-        sleep(100);
+        sl1p(100);
     }
     let capimg = captureScreen();
     //capimg = images.clip(capimg, 0, 0, device.width, closeButtonBottom);
-    sleep(100);
+    sl1p(100);
     if (cid) showCon();
     return paddle.ocr(capimg);
+}
+function sl1p(n) {
+    if (!n || typeof n !== 'number') n = 1000;
+    sleep(n);
+    while (currentPackage() == "com.android.systemui") sleep(1000);
 }
 function l_exit() {
     debugDelay = -1;
@@ -988,7 +1010,11 @@ function textButtonExist(str) {
     return false;
 }
 function refreshView(v) {
-    return v.parent().child(v.indexInParent());
+    if (v)
+        if (v.parent())
+            if (v.indexInParent() < v.parent().childCount())
+                return v.parent().child(v.indexInParent());
+    return { text: function () { return ""; } };
 }
 function getLotteryReceive(v) {
     let top1 = v.bounds().top;
@@ -1014,11 +1040,11 @@ function scrollShowButton(scrolled, btn) {
         let scroll2 = scroll1;
         for (let i = 0; i < Math.floor(scroll1 / h4); i++) {
             swipe(device.width - 50, device.height * 7 / 8, device.width - 60, device.height * 7 / 8 - h4, 300);
-            sleep(100);
+            sl1p(100);
             scroll2 -= h4;
         }
         swipe(device.width - 50, device.height * 7 / 8, device.width - 60, device.height * 7 / 8 - scroll2, 500);
-        sleep(800);
+        sl1p(800);
         return scrolled + scroll1;
     }
     if (scrolled > 0 && btn_top - scrolled < 0) {
@@ -1026,11 +1052,11 @@ function scrollShowButton(scrolled, btn) {
         let scroll2 = scroll1;
         for (let i = 0; i < Math.floor(scroll1 / h4); i++) {
             swipe(device.width - 50, device.height / 4, device.width - 60, device.height / 4 + h4, 300);
-            sleep(100);
+            sl1p(100);
             scroll2 -= h4;
         }
         swipe(device.width - 50, device.height / 4, device.width - 60, device.height / 4 + scroll2, 500);
-        sleep(800);
+        sl1p(800);
         return scrolled - scroll1;
     }
     return scrolled;
@@ -1088,7 +1114,7 @@ function clickIknown() {
         let a = "恭喜获得";
         if (t1.substring(0, a.length) == a) addReceived(t1.substring(a.length));
 
-        sleep(300);
+        sl1p(300);
         if (textContains("知道了").exists()) {
             let t = textContains("知道了").findOne(200);
             //let t1 = getTextOfView(t.parent().parent(), t);
@@ -1237,24 +1263,24 @@ if (debug) {
                     n = 0;
                     b = new Date().getTime() - st;
                 }
-                if (b < a) sleep(a - b);
+                if (b < a) sl1p(a - b);
             }
         }
     );
 }
 
 //home();
-//sleep(900);
+//sl1p(900);
 
 // 打开起点
 openQidian();
 l_log(longdash);
-sleep(1500);
+sl1p(1500);
 
 // 进入福利中心
 enterFreeCenter();
 l_log(longdash);
-sleep(2000);
+sl1p(2000);
 
 try {
     // 签到里面的兑换
@@ -1262,7 +1288,7 @@ try {
         l_log("开始兑换");
         if (exchange() == 0) l_log("无兑换");
         l_log(longdash);
-        sleep(2000);
+        sl1p(2000);
     }
 
     // 开始看广告
@@ -1290,7 +1316,7 @@ try {
                 l_verbose(shortdash);
                 l_log(s);
                 aa[ii].click();
-                sleep(1000);
+                sl1p();
                 if (c == 1) video_look(aa[ii]);
                 if (c == 2) jumpMarket(aa[ii]);
                 break; // 不然会先按下面的，刚刚按过现在又亮起来的会下次循环按
@@ -1307,13 +1333,13 @@ try {
     }
     freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
     l_log(longdash);
-    sleep(2000);
+    sl1p(2000);
 
     // 签到里面的抽奖
     l_log("开始抽奖");
     if (lottery() == 0) l_log("无抽奖");
     l_log(longdash);
-    sleep(2000);
+    sl1p(2000);
 
     // 其它脚本里的听书等活动，快一年了还没有，先删
 
@@ -1341,10 +1367,11 @@ try {
                     l_verbose(shortdash);
                     l_log(s);
                     aa[ii].click();
-                    sleep(1000);
+                    sl1p();
                     if (target == "去完成") video_look(aa[ii]);
                     if (target == "去阅读") {
                         let min = s.replace(/[^\d.]/g, "") * 1;
+                        sl1p();
                         let book = id("tvBookName").find()[1];
                         l_log(book.text());
                         book.parent().click();
@@ -1362,7 +1389,7 @@ try {
         else l_log("无加点");
         freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
         l_log(longdash);
-        sleep(2000);
+        sl1p(2000);
     }
 
     // 当日阅读5分钟
@@ -1374,24 +1401,24 @@ try {
         let aa = text(target).find();
         for (let ii = aa.length - 1; ii > -1; ii--) {
             //l_verbose(target);
+            if (!aa[ii]) continue;
             let s = getDescriptionOnLeft(aa[ii]);
             if (strHasArr(s, expstr1)) {
                 freeCenterScrolled = scrollShowButton(freeCenterScrolled, aa[ii]);
-                aa[ii] = refreshView(aa[ii]);
-                do {
+                while (aa[ii].text() == refreshView(aa[ii]).text()) {
                     s = getDescriptionOnLeft(aa[ii]);
                     l_log(s);
                     let s1 = s.split("\n");
                     let num = 0;
                     for (let j = 0; j < s1.length; j++) if (s1[j].indexOf("再读") > -1) num = s1[j].replace(/[^\d.]/g, "") * 1;
                     aa[ii].click();
-                    sleep(2000);
+                    sl1p(2000);
                     let b = text(target).find();
                     for (let j = 0; j < b.length; j++) {
                         if (b[j].parent().clickable() && !b[j].clickable()) {
                             l_verbose(getTextOfView(b[j].parent(), b[j]));
                             b[j].parent().click();
-                            sleep(1000);
+                            sl1p();
                             read_book(num);
                             while (!aa[ii].parent()) {
                                 l_verbose("还未返回");
@@ -1407,18 +1434,18 @@ try {
                                     l_verbose("但无 加入 弹窗");
                                     back();
                                 }
-                                sleep(2000);
+                                sl1p(2000);
                             }
                             break;
                         }
                     }
                     l_verbose(shortdash);
-                    sleep(3000);
-                } while (refreshView(aa[ii]).text() == aa[ii].text());
+                    sl1p(3000);
+                }
                 l_info("结束阅读");
                 freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
                 l_log(longdash);
-                sleep(2000);
+                sl1p(2000);
             }
         }
     }
@@ -1450,25 +1477,25 @@ try {
                 l_log(playLabel.text());
                 let min = playLabel.text().replace(/[^\d.]/g, "") * 1;
                 b.click();
-                sleep(5000);
+                sl1p(5000);
                 let res = game_play(min);
                 if (res == 1) back();
-                sleep(2000);
+                sl1p(2000);
                 if (wherePage() == "gamecenter") back();
-                sleep(3000);
+                sl1p(3000);
                 if (res > 1) break;
             } else {
                 l_error("没找到对应的“" + gamebtntext + "”按钮，可能起点改了布局或按钮字符");
                 back();
-                sleep(1000);
+                sl1p();
             }
             num++;
-            sleep(1000);
+            sl1p();
         } while (textContains(gameremain).exists());
         l_info("结束玩游戏");
         freeCenterScrolled = scrollShowButton(freeCenterScrolled, 0);
         l_log(longdash);
-        sleep(1000);
+        sl1p();
     }
 
     // 领游戏与看书时长的
@@ -1487,7 +1514,7 @@ try {
                 bonusNum++;
                 let c1 = 0;
                 for (let ii = 0; ii < 5; ii++) {
-                    sleep(100);
+                    sl1p(100);
                     c1 = clickIknown();
                     if (c1) break;
                 }
@@ -1506,14 +1533,14 @@ try {
     });
     if (bonusNum == 0) l_log("无");
     l_log(longdash);
-    sleep(1000);
+    sl1p();
 
     l_log.apply(null, reviewResults());
     home();
     l_info("脚本正常结束");
     l_verbose("控制台3秒后自动关闭");
     l_log("记得清理Autox.js后台");
-    sleep(3000);
+    sl1p(3000);
     console.hide();
 } catch (err) {
     l_error(err.message);
